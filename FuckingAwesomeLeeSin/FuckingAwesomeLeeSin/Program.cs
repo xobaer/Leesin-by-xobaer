@@ -7,6 +7,7 @@ ___________             __   .__                    _____                       
      \/              \/     \/       \//_____/           \/            \/     \/            \/     \/          \/   \/     \/          \/         \/ 
 */
 using System.Collections.Generic;
+using System.Runtime.Remoting.Messaging;
 using LeagueSharp;
 using LeagueSharp.Common;
 using LX_Orbwalker;
@@ -29,6 +30,7 @@ namespace FuckingAwesomeLeeSin
         public static Menu Menu;
         public static bool CastQAgain;
         public static bool CastWardAgain = true;
+        public static bool reCheckWard = true;
         public static Obj_AI_Base minionerimo;
         public static bool checkSmite = false;
 
@@ -77,6 +79,8 @@ namespace FuckingAwesomeLeeSin
             Menu.SubMenu("Combo").AddItem(new MenuItem("useQ", "Use Q?").SetValue(true));
             Menu.SubMenu("Combo").AddItem(new MenuItem("useE", "Use E?").SetValue(true));
             Menu.SubMenu("Combo").AddItem(new MenuItem("useR", "Use R?").SetValue(true));
+            Menu.SubMenu("Combo").AddItem(new MenuItem("starCombo", "Star Combo").SetValue(new KeyBind("T".ToCharArray()[0], KeyBindType.Press)));
+            Menu.SubMenu("Combo").AddItem(new MenuItem("random2ejwej", "W->Q->R->Q2"));
 
             var harassMenu = new Menu("Harass", "Harass");
             harassMenu.AddItem(new MenuItem("q1H", "Use Q1").SetValue(true));
@@ -127,6 +131,15 @@ namespace FuckingAwesomeLeeSin
             wardjumpMenu.AddItem(new MenuItem("j2m", "Jump to minions").SetValue(true));
             wardjumpMenu.AddItem(new MenuItem("j2c", "Jump to champions").SetValue(true));
             Menu.AddSubMenu(wardjumpMenu);
+
+            var drawMenu = new Menu("Drawing", "Drawing");
+            drawMenu.AddItem(new MenuItem("DrawEnabled", "Draw Enabled").SetValue(false));
+            drawMenu.AddItem(new MenuItem("WJDraw", "Draw WardJump").SetValue(true));
+            drawMenu.AddItem(new MenuItem("drawQ", "Draw Q").SetValue(true));
+            drawMenu.AddItem(new MenuItem("drawW", "Draw W").SetValue(true));
+            drawMenu.AddItem(new MenuItem("drawE", "Draw E").SetValue(true));
+            drawMenu.AddItem(new MenuItem("drawR", "Draw R").SetValue(true));
+            Menu.AddSubMenu(drawMenu);
 
             //Exploits
             Menu.AddItem(new MenuItem("NFE", "Use Packets?").SetValue(true));
@@ -292,7 +305,6 @@ namespace FuckingAwesomeLeeSin
         }
         public static void SaveMe()
         {
-
             if ((_player.Health / _player.MaxHealth * 100) > Menu.Item("hpPercentSM").GetValue<Slider>().Value || _player.SummonerSpellbook.CanUseSpell(smiteSlot) != SpellState.Ready) return;
             var epicSafe = false;
             var buffSafe = false;
@@ -341,9 +353,9 @@ namespace FuckingAwesomeLeeSin
         static void Game_OnGameUpdate(EventArgs args)
         {
             if(_player.IsDead) return;
-            minionerimo = null;
             if(SimpleTs.GetSelectedTarget() == null) InsecComboStep = InsecComboStepSelect.NONE;
             if (Menu.Item("smiteEnabled").GetValue<KeyBind>().Active) smiter();
+            if (Menu.Item("starCombo").GetValue<KeyBind>().Active) wardCombo();
             if (paramBool("smiteSave")) SaveMe();
             if (Menu.Item("InsecEnabled").GetValue<KeyBind>().Active)
             {
@@ -373,16 +385,26 @@ namespace FuckingAwesomeLeeSin
         }
         static void Drawing_OnDraw(EventArgs args)
         {
+            if (!paramBool("DrawEnabled")) return;
             var target = SimpleTs.GetSelectedTarget();
             if(target != null)
             {
-                Utility.DrawCircle(getInsecPos(target), 100, System.Drawing.Color.White);
+                Drawing.DrawCircle(getInsecPos(target), 100, System.Drawing.Color.White);
             }
             if (Menu.Item("smiteEnabled").GetValue<KeyBind>().Active && paramBool("drawSmite"))
             {
-                Utility.DrawCircle(_player.Position, 710, System.Drawing.Color.White);
+                Drawing.DrawCircle(_player.Position, 700, System.Drawing.Color.White);
             }
-            
+            if (Menu.Item("wjump").GetValue<KeyBind>().Active)
+            {
+                Drawing.DrawCircle(JumpPos.To3D(), 100, System.Drawing.Color.Red);
+                Drawing.DrawCircle(_player.Position, 600, System.Drawing.Color.Red);
+            }
+            if (paramBool("drawQ")) Drawing.DrawCircle(_player.Position, Q.Range, System.Drawing.Color.White);
+            if (paramBool("drawW")) Drawing.DrawCircle(_player.Position, W.Range, System.Drawing.Color.White);
+            if (paramBool("drawE")) Drawing.DrawCircle(_player.Position, E.Range, System.Drawing.Color.White);
+            if (paramBool("drawR")) Drawing.DrawCircle(_player.Position, R.Range, System.Drawing.Color.White);
+
         }
         public static float Q2Damage(Obj_AI_Base target, float subHP = 0, bool monster = false)
         {
@@ -466,10 +488,6 @@ namespace FuckingAwesomeLeeSin
             }
         }
 
-        public bool inRect(Vector2 topC, Vector2 botC, Vector2 point)
-        {
-            return (topC.X > point.X && topC.Y > point.Y && botC.X < point.X && botC.Y < point.Y);
-        }
         public static void useItems(Obj_AI_Hero enemy)
         {
             if (Items.CanUseItem("Bilgewater Cutlass") && _player.Distance(enemy) <= 450) 
@@ -487,8 +505,9 @@ namespace FuckingAwesomeLeeSin
         {
             var passiveIsActive = _player.HasBuff("blindmonkpassive_cosmetic", true);
             var minion =
-                MinionManager.GetMinions(_player.ServerPosition, Q.Range, MinionTypes.All, MinionTeam.NotAlly,
+                MinionManager.GetMinions(_player.ServerPosition, Q.Range, MinionTypes.All, MinionTeam.Neutral,
                     MinionOrderTypes.MaxHealth).FirstOrDefault();
+            if (minion == null) minion = MinionManager.GetMinions(_player.ServerPosition, Q.Range).FirstOrDefault();
                 foreach (var name in buffandepics)
                 {
                     if (minion != null && minion.Name.ToLower().Contains(name.ToLower()))
@@ -505,7 +524,6 @@ namespace FuckingAwesomeLeeSin
                         {
                             Q.Cast(minion, true);
                         }
-
                     }
                     else if ((minion.HasBuff("BlindMonkQOne", true) ||
                              minion.HasBuff("blindmonkqonechaos", true)) && (!passiveIsActive || Q.IsKillable(minion, 1)) ||
@@ -528,26 +546,34 @@ namespace FuckingAwesomeLeeSin
         {
             var basePos = _player.Position.To2D();
             var newPos = (pos.To2D() - _player.Position.To2D());
-            if (m2m)
+
+            if (JumpPos == new Vector2())
             {
-                Orbwalk(pos);
+                if (reqinMaxRange) JumpPos = pos.To2D();
+                else if (maxRange || _player.Distance(pos) > 600) JumpPos = basePos + (newPos.Normalized()*(600));
+                else JumpPos = basePos + (newPos.Normalized()*(_player.Distance(pos)));
             }
+            if (JumpPos != new Vector2() && reCheckWard)
+            {
+                reCheckWard = false;
+                Utility.DelayAction.Add(500, () =>
+                {
+                    if (JumpPos != new Vector2())
+                    {
+                        JumpPos = new Vector2();
+                        reCheckWard = true;
+                    }
+                });
+            }
+            if (m2m) Orbwalk(pos);
             if (!W.IsReady() || W.Instance.Name == "blindmonkwtwo" || reqinMaxRange && _player.Distance(pos) > W.Range) return;
             if (minions || champions)
             {
-                if (maxRange || _player.Distance(pos) > W.Range)
-                {
-                    JumpPos = basePos + (newPos.Normalized() * (W.Range));
-                }
-                else
-                {
-                    JumpPos = basePos + (newPos.Normalized() * (_player.Distance(pos)));
-                }
                 if (champions)
                 {
                     var champs =
                         (from champ in ObjectManager.Get<Obj_AI_Hero>()
-                            where champ.IsAlly && champ.Distance(_player) < W.Range && champ.Distance(pos) < 100 && !champ.IsMe
+                            where champ.IsAlly && champ.Distance(_player) < W.Range && champ.Distance(pos) < 200 && !champ.IsMe
                             select champ).ToList();
                     if (champs.Count > 0)
                     {
@@ -570,19 +596,10 @@ namespace FuckingAwesomeLeeSin
                     }
                 }
             }
-            if (maxRange || _player.Distance(pos) > 560)
-            {
-                JumpPos = basePos + (newPos.Normalized()*(560));
-            }
-            else
-            {
-                JumpPos = basePos + (newPos.Normalized() * (_player.Distance(pos)));
-            }
-            if (Utility.IsWall(JumpPos.To3D())) return;
             var isWard = false;
             foreach (var ward in ObjectManager.Get<Obj_AI_Minion>())
             {
-                if (ward.IsAlly && ward.Name.ToLower().Contains("ward") && ward.Distance(pos) < 150)
+                if (ward.IsAlly && ward.Name.ToLower().Contains("ward") && ward.Distance(JumpPos) < 200)
                 {
                     isWard = true;
                     W.CastOnUnit(ward, true);
@@ -600,30 +617,31 @@ namespace FuckingAwesomeLeeSin
         public static void wardCombo()
         {
             var target = SimpleTs.GetTarget(1500, SimpleTs.DamageType.Physical);
+            Orbwalk(Game.CursorPos);
             if (target == null) return;
-            if ((target.HasBuff("BlindMonkQOne", true) || target.HasBuff("blindmonkqonechaos", true)) && paramBool("useQ"))
+            if ((target.HasBuff("BlindMonkQOne", true) || target.HasBuff("blindmonkqonechaos", true)))
             {
                 if (CastQAgain || target.HasBuffOfType(BuffType.Knockup) && !_player.IsValidTarget(300) && !R.IsReady() || !target.IsValidTarget(LXOrbwalker.GetAutoAttackRange(_player)) && !R.IsReady())
                 {
                     Q.Cast();
                 }
             }
-            if (target.Distance(_player) > R.Range && target.Distance(_player) < R.Range + 580)
+            if (target.Distance(_player) > R.Range && target.Distance(_player) < R.Range + 580 && (target.HasBuff("BlindMonkQOne", true) || target.HasBuff("blindmonkqonechaos", true)))
             {
                 WardJump(target.Position, false);
             }
-            if (E.IsReady() && E.Instance.Name == "BlindMonkEOne" && target.IsValidTarget(E.Range) && paramBool("useE"))
+            if (E.IsReady() && E.Instance.Name == "BlindMonkEOne" && target.IsValidTarget(E.Range))
                 E.Cast();
 
             if (E.IsReady() && E.Instance.Name != "BlindMonkEOne" &&
-                !target.IsValidTarget(LXOrbwalker.GetAutoAttackRange(_player)) && paramBool("useE"))
+                !target.IsValidTarget(LXOrbwalker.GetAutoAttackRange(_player)))
                 E.Cast();
 
-            if (Q.IsReady() && Q.Instance.Name == "BlindMonkQOne" && paramBool("useE"))
+            if (Q.IsReady() && Q.Instance.Name == "BlindMonkQOne")
                 CastQ1(target);
 
             if (R.IsReady() && Q.IsReady() &&
-                ((target.HasBuff("BlindMonkQOne", true) || target.HasBuff("blindmonkqonechaos", true))) && paramBool("useR"))
+                ((target.HasBuff("BlindMonkQOne", true) || target.HasBuff("blindmonkqonechaos", true))))
                 R.CastOnUnit(target, packets());
         }
         public static void StarCombo()
