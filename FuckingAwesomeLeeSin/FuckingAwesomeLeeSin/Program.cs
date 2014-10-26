@@ -98,6 +98,7 @@ namespace FuckingAwesomeLeeSin
             //InsecMenu
             var insecMenu = new Menu("Insec", "Insec");
             insecMenu.AddItem(new MenuItem("InsecEnabled", "Enabled").SetValue(new KeyBind("Y".ToCharArray()[0], KeyBindType.Press)));
+            insecMenu.AddItem(new MenuItem("rnshsasdhjk", "Left Click Insec Target"));
             insecMenu.AddItem(new MenuItem("insecOrbwalk", "Orbwalking?").SetValue(true));
             insecMenu.AddItem(new MenuItem("insec2champs", "Insec to allies?").SetValue(true));
             insecMenu.AddItem(new MenuItem("insec2tower", "Insec to towers?").SetValue(true));
@@ -126,7 +127,7 @@ namespace FuckingAwesomeLeeSin
             wardjumpMenu.AddItem(
                 new MenuItem("wjump", "Wardjump key").SetValue(new KeyBind("G".ToCharArray()[0], KeyBindType.Press)));
             wardjumpMenu.AddItem(new MenuItem("maxRange", "Always Cast At Max Range").SetValue(false));
-            wardjumpMenu.AddItem(new MenuItem("castInRange", "Jump to your mouse pos only").SetValue(true));
+            wardjumpMenu.AddItem(new MenuItem("castInRange", "Jump to your mouse pos only").SetValue(false));
             wardjumpMenu.AddItem(new MenuItem("m2m", "Move to mouse").SetValue(true));
             wardjumpMenu.AddItem(new MenuItem("j2m", "Jump to minions").SetValue(true));
             wardjumpMenu.AddItem(new MenuItem("j2c", "Jump to champions").SetValue(true));
