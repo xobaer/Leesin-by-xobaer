@@ -465,6 +465,11 @@ namespace FuckingAwesomeLeeSin
                 }
             }
         }
+
+        public bool inRect(Vector2 topC, Vector2 botC, Vector2 point)
+        {
+            return (topC.X > point.X && topC.Y > point.Y && botC.X < point.X && botC.Y < point.Y);
+        }
         public static void useItems(Obj_AI_Hero enemy)
         {
             if (Items.CanUseItem("Bilgewater Cutlass") && _player.Distance(enemy) <= 450) 
@@ -590,6 +595,36 @@ namespace FuckingAwesomeLeeSin
                 CastWardAgain = false;
                 Utility.DelayAction.Add(1000, () => CastWardAgain = true);
             }
+        }
+
+        public static void wardCombo()
+        {
+            var target = SimpleTs.GetTarget(1500, SimpleTs.DamageType.Physical);
+            if (target == null) return;
+            if ((target.HasBuff("BlindMonkQOne", true) || target.HasBuff("blindmonkqonechaos", true)) && paramBool("useQ"))
+            {
+                if (CastQAgain || target.HasBuffOfType(BuffType.Knockup) && !_player.IsValidTarget(300) && !R.IsReady() || !target.IsValidTarget(LXOrbwalker.GetAutoAttackRange(_player)) && !R.IsReady())
+                {
+                    Q.Cast();
+                }
+            }
+            if (target.Distance(_player) > R.Range && target.Distance(_player) < R.Range + 580)
+            {
+                WardJump(target.Position, false);
+            }
+            if (E.IsReady() && E.Instance.Name == "BlindMonkEOne" && target.IsValidTarget(E.Range) && paramBool("useE"))
+                E.Cast();
+
+            if (E.IsReady() && E.Instance.Name != "BlindMonkEOne" &&
+                !target.IsValidTarget(LXOrbwalker.GetAutoAttackRange(_player)) && paramBool("useE"))
+                E.Cast();
+
+            if (Q.IsReady() && Q.Instance.Name == "BlindMonkQOne" && paramBool("useE"))
+                CastQ1(target);
+
+            if (R.IsReady() && Q.IsReady() &&
+                ((target.HasBuff("BlindMonkQOne", true) || target.HasBuff("blindmonkqonechaos", true))) && paramBool("useR"))
+                R.CastOnUnit(target, packets());
         }
         public static void StarCombo()
         {
