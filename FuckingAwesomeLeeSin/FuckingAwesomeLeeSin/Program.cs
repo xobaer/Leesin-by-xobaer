@@ -157,6 +157,7 @@ namespace FuckingAwesomeLeeSin
             miscMenu.AddItem(new MenuItem("NFE", "Use Packets?").SetValue(true));
             miscMenu.AddItem(new MenuItem("IGNks", "Use Ignite?").SetValue(true));
             miscMenu.AddItem(new MenuItem("qSmite", "Smite Q!").SetValue(true));
+            Menu.AddSubMenu(miscMenu);
             //Make the menu visible
             Menu.AddToMainMenu();
 
@@ -407,6 +408,7 @@ namespace FuckingAwesomeLeeSin
                 case LXOrbwalker.Mode.Harass:
                     Harass();
                     break;
+
             }
             if(Menu.Item("wjump").GetValue<KeyBind>().Active)
                 wardjumpToMouse();
