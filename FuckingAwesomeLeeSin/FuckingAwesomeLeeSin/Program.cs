@@ -32,6 +32,7 @@ namespace FuckingAwesomeLeeSin
         public static bool CastQAgain;
         public static bool CastWardAgain = true;
         public static bool reCheckWard = true;
+        public static bool wardJumped = false;
         public static Obj_AI_Base minionerimo;
         public static bool checkSmite = false;
         public static bool delayW = false;
@@ -82,7 +83,7 @@ namespace FuckingAwesomeLeeSin
             //Combo menu
             Menu.AddSubMenu(new Menu("Combo", "Combo"));
             Menu.SubMenu("Combo").AddItem(new MenuItem("useQ", "Use Q?").SetValue(true));
-            Menu.SubMenu("Combo").AddItem(new MenuItem("useW", "Use W?").SetValue(true));
+            Menu.SubMenu("Combo").AddItem(new MenuItem("useW", "Wardjump in combo").SetValue(true));
             Menu.SubMenu("Combo").AddItem(new MenuItem("dsjk", "Wardjump if: "));
             Menu.SubMenu("Combo").AddItem(new MenuItem("wMode", "> AA Range || > Q Range").SetValue(true));
             Menu.SubMenu("Combo").AddItem(new MenuItem("useE", "Use E?").SetValue(true));
@@ -117,6 +118,10 @@ namespace FuckingAwesomeLeeSin
             insecMenu.AddItem(new MenuItem("insec2tower", "Insec to towers?").SetValue(true));
             insecMenu.AddItem(new MenuItem("bonusRangeT", "Towers Bonus Range").SetValue(new Slider(0, 0, 1000)));
             insecMenu.AddItem(new MenuItem("insec2orig", "Insec to original pos?").SetValue(true));
+            insecMenu.AddItem(new MenuItem("22222222222", "--"));
+            insecMenu.AddItem(new MenuItem("instaFlashInsec1", "Cast R Manually"));
+            insecMenu.AddItem(new MenuItem("instaFlashInsec2", "And it will flash to insec pos"));
+            insecMenu.AddItem(new MenuItem("instaFlashInsec", "Enabled").SetValue(new KeyBind("P".ToCharArray()[0], KeyBindType.Toggle)));
             Menu.AddSubMenu(insecMenu);
 
             var autoSmiteSettings = new Menu("Smite Settings", "Auto Smite Settings");
@@ -215,10 +220,12 @@ namespace FuckingAwesomeLeeSin
                     CastQAgain = true;
                 });
             }
-            if (args.SData.Name == "summonerflash") Game.PrintChat("222");
+            if (Menu.Item("instaFlashInsec").GetValue<KeyBind>().Active && args.SData.Name == "BlindMonkRKick")
+            {
+                _player.SummonerSpellbook.CastSpell(flashSlot, getInsecPos((Obj_AI_Hero) (args.Target)));
+            }
             if (args.SData.Name == "summonerflash" && InsecComboStep != InsecComboStepSelect.NONE)
             {
-                Game.PrintChat("topkek");
                 Obj_AI_Hero target = paramBool("insecMode")
                    ? SimpleTs.GetSelectedTarget()
                    : SimpleTs.GetTarget(Q.Range + 200, SimpleTs.DamageType.Physical);
@@ -288,8 +295,9 @@ namespace FuckingAwesomeLeeSin
                     if (W.IsReady() && W.Instance.Name == "BlindMonkWOne")
                     {
                         WardJump(getInsecPos(target), false, false, true);
+                        wardJumped = true;
                     }
-                    else if (_player.SummonerSpellbook.CanUseSpell(flashSlot) == SpellState.Ready && paramBool("flashInsec"))
+                    else if (_player.SummonerSpellbook.CanUseSpell(flashSlot) == SpellState.Ready && paramBool("flashInsec") && !wardJumped && _player.Distance(insecPos) < 400 || _player.SummonerSpellbook.CanUseSpell(flashSlot) == SpellState.Ready && paramBool("flashInsec") && !wardJumped && _player.Distance(insecPos) < 400 && FindBestWardItem() == null)
                     {
                         _player.SummonerSpellbook.CastSpell(flashSlot, getInsecPos(target));
                         Utility.DelayAction.Add(50, () => R.CastOnUnit(target, true));
@@ -388,7 +396,12 @@ namespace FuckingAwesomeLeeSin
         static void Game_OnGameUpdate(EventArgs args)
         {
             if(_player.IsDead) return;
-            if(SimpleTs.GetSelectedTarget() == null) InsecComboStep = InsecComboStepSelect.NONE;
+            if ((paramBool("insecMode")
+                ? SimpleTs.GetSelectedTarget()
+                : SimpleTs.GetTarget(Q.Range + 200, SimpleTs.DamageType.Physical)) == null)
+            {
+                InsecComboStep = InsecComboStepSelect.NONE;
+            }
             if (Menu.Item("smiteEnabled").GetValue<KeyBind>().Active) smiter();
             if (Menu.Item("starCombo").GetValue<KeyBind>().Active) wardCombo();
             if (paramBool("smiteSave")) SaveMe();
@@ -419,6 +432,7 @@ namespace FuckingAwesomeLeeSin
             else
             {
                 isNullInsecPos = true;
+                wardJumped = false;
             }
             if(LXOrbwalker.CurrentMode != LXOrbwalker.Mode.Combo) InsecComboStep = InsecComboStepSelect.NONE;
             switch (LXOrbwalker.CurrentMode)
@@ -443,6 +457,7 @@ namespace FuckingAwesomeLeeSin
             Obj_AI_Hero newTarget = paramBool("insecMode")
                    ? SimpleTs.GetSelectedTarget()
                    : SimpleTs.GetTarget(Q.Range + 200, SimpleTs.DamageType.Physical);
+            if (Menu.Item("instaFlashInsec").GetValue<KeyBind>().Active) Drawing.DrawText(960, 340, System.Drawing.Color.Red, "FLASH INSEC ENABLED");
             if(newTarget!= null)
             {
                 Utility.DrawCircle(getInsecPos(newTarget), 100, System.Drawing.Color.White);
