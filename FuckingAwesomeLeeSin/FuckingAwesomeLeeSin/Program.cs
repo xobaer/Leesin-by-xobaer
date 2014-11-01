@@ -27,6 +27,7 @@ namespace FuckingAwesomeLeeSin
         public static Vector2 JumpPos;
         public static Vector3 mouse = Game.CursorPos;
         public static SpellSlot smiteSlot;
+        public static SpellSlot flashSlot;
         public static Menu Menu;
         public static bool CastQAgain;
         public static bool CastWardAgain = true;
@@ -62,6 +63,7 @@ namespace FuckingAwesomeLeeSin
             if (_player.ChampionName != ChampName) return;
             IgniteSlot = _player.GetSpellSlot("SummonerDot");
             smiteSlot = _player.GetSpellSlot("SummonerSmite");
+            flashSlot = _player.GetSpellSlot("summonerflash");
 
             Q = new Spell(SpellSlot.Q, 1100);
             W = new Spell(SpellSlot.W, 700);
@@ -84,7 +86,8 @@ namespace FuckingAwesomeLeeSin
             Menu.SubMenu("Combo").AddItem(new MenuItem("dsjk", "Wardjump if: "));
             Menu.SubMenu("Combo").AddItem(new MenuItem("wMode", "> AA Range || > Q Range").SetValue(true));
             Menu.SubMenu("Combo").AddItem(new MenuItem("useE", "Use E?").SetValue(true));
-            Menu.SubMenu("Combo").AddItem(new MenuItem("useR", "Use R?").SetValue(true));
+            Menu.SubMenu("Combo").AddItem(new MenuItem("useR", "Use R?").SetValue(false));
+            Menu.SubMenu("Combo").AddItem(new MenuItem("ksR", "KS R?").SetValue(false));
             Menu.SubMenu("Combo").AddItem(new MenuItem("starCombo", "Star Combo").SetValue(new KeyBind("T".ToCharArray()[0], KeyBindType.Press)));
             Menu.SubMenu("Combo").AddItem(new MenuItem("random2ejwej", "W->Q->R->Q2"));
 
@@ -108,6 +111,7 @@ namespace FuckingAwesomeLeeSin
             insecMenu.AddItem(new MenuItem("rnshsasdhjk", "Insec Mode:"));
             insecMenu.AddItem(new MenuItem("insecMode", "Left Click [on] TS [off]").SetValue(true));
             insecMenu.AddItem(new MenuItem("insecOrbwalk", "Orbwalking?").SetValue(true));
+            insecMenu.AddItem(new MenuItem("flashInsec", "Flash insec?").SetValue(false));
             insecMenu.AddItem(new MenuItem("insec2champs", "Insec to allies?").SetValue(true));
             insecMenu.AddItem(new MenuItem("bonusRangeA", "Ally Bonus Range").SetValue(new Slider(0, 0, 1000)));
             insecMenu.AddItem(new MenuItem("insec2tower", "Insec to towers?").SetValue(true));
@@ -211,14 +215,27 @@ namespace FuckingAwesomeLeeSin
                     CastQAgain = true;
                 });
             }
-            
+            if (args.SData.Name == "summonerflash") Game.PrintChat("222");
+            if (args.SData.Name == "summonerflash" && InsecComboStep != InsecComboStepSelect.NONE)
+            {
+                Game.PrintChat("topkek");
+                Obj_AI_Hero target = paramBool("insecMode")
+                   ? SimpleTs.GetSelectedTarget()
+                   : SimpleTs.GetTarget(Q.Range + 200, SimpleTs.DamageType.Physical);
+                InsecComboStep = InsecComboStepSelect.PRESSR;
+                Utility.DelayAction.Add(80, () => R.CastOnUnit(target, true));
+            }
             if (args.SData.Name == "BlindMonkRKick")
                 InsecComboStep = InsecComboStepSelect.NONE;
             //if (args.SData.Name == "blindmonkqtwo" && HarassSelect != HarassStatEnum.NONE)
             //    HarassSelect = HarassStatEnum.WJ;
             if (args.SData.Name == "BlindMonkWOne" && InsecComboStep == InsecComboStepSelect.NONE)
             {
+                Obj_AI_Hero target = paramBool("insecMode")
+                    ? SimpleTs.GetSelectedTarget()
+                    : SimpleTs.GetTarget(Q.Range + 200, SimpleTs.DamageType.Physical);
                 InsecComboStep = InsecComboStepSelect.PRESSR;
+                Utility.DelayAction.Add(100, () => R.CastOnUnit(target, true));
             }
         }
         public static Vector3 getInsecPos(Obj_AI_Hero target)
@@ -251,8 +268,7 @@ namespace FuckingAwesomeLeeSin
         static InsecComboStepSelect InsecComboStep;
         static void InsecCombo(Obj_AI_Hero target)
         {
-             if (_player.Distance(getInsecPos(target)) <= 100) InsecComboStep = InsecComboStepSelect.PRESSR;
-             else if (InsecComboStep == InsecComboStepSelect.NONE && getInsecPos(target).Distance(_player.Position) < 600) InsecComboStep = InsecComboStepSelect.WGAPCLOSE;
+              if (InsecComboStep == InsecComboStepSelect.NONE && getInsecPos(target).Distance(_player.Position) < 600) InsecComboStep = InsecComboStepSelect.WGAPCLOSE;
              else if(InsecComboStep == InsecComboStepSelect.NONE && target.Distance(_player) < Q.Range) InsecComboStep = InsecComboStepSelect.QGAPCLOSE; 
              
             switch (InsecComboStep)
@@ -269,7 +285,15 @@ namespace FuckingAwesomeLeeSin
                     }
                     break;
                 case InsecComboStepSelect.WGAPCLOSE:
-                    WardJump(getInsecPos(target), false, false, true);
+                    if (W.IsReady() && W.Instance.Name == "BlindMonkWOne")
+                    {
+                        WardJump(getInsecPos(target), false, false, true);
+                    }
+                    else if (_player.SummonerSpellbook.CanUseSpell(flashSlot) == SpellState.Ready && paramBool("flashInsec"))
+                    {
+                        _player.SummonerSpellbook.CastSpell(flashSlot, getInsecPos(target));
+                        Utility.DelayAction.Add(50, () => R.CastOnUnit(target, true));
+                    }
                     break;
                 case InsecComboStepSelect.PRESSR:
                     R.CastOnUnit(target, true);
@@ -747,10 +771,10 @@ namespace FuckingAwesomeLeeSin
         public static void CastQ1(Obj_AI_Hero target)
         {
             var Qpred = Q.GetPrediction(target);
-            if (Qpred.CollisionObjects.Count == 1 && _player.SummonerSpellbook.CanUseSpell(smiteSlot) == SpellState.Ready && paramBool("qSmite"))
+            if (Qpred.CollisionObjects.Count == 1 && _player.SummonerSpellbook.CanUseSpell(smiteSlot) == SpellState.Ready && paramBool("qSmite") && Q.MinHitChance == HitChance.High && Qpred.CollisionObjects[0].IsValidTarget(780))
             {
-                _player.SummonerSpellbook.CastSpell(smiteSlot, Qpred.CollisionObjects[1]);
-                Utility.DelayAction.Add(70, () => Q.Cast(target, packets()));
+                _player.SummonerSpellbook.CastSpell(smiteSlot, Qpred.CollisionObjects[0]);
+                Utility.DelayAction.Add(70, () => Q.Cast(Qpred.CastPosition, packets()));
             }
             else if(Qpred.CollisionObjects.Count == 0)
             {
