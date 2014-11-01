@@ -739,6 +739,7 @@ namespace FuckingAwesomeLeeSin
         {
             var target = SimpleTs.GetTarget(1500, SimpleTs.DamageType.Physical);
             if (target == null) return;
+            if (R.GetDamage(target) >= target.Health && paramBool("ksR")) R.Cast();
             useItems(target);
             if ((target.HasBuff("BlindMonkQOne", true) || target.HasBuff("blindmonkqonechaos", true)) && paramBool("useQ"))
             {
