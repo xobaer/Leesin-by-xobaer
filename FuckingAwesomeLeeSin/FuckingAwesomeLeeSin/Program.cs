@@ -83,6 +83,7 @@ namespace FuckingAwesomeLeeSin
             //Combo menu
             Menu.AddSubMenu(new Menu("Combo", "Combo"));
             Menu.SubMenu("Combo").AddItem(new MenuItem("useQ", "Use Q?").SetValue(true));
+            Menu.SubMenu("Combo").AddItem(new MenuItem("useQ2", "Use Q2?").SetValue(true));
             Menu.SubMenu("Combo").AddItem(new MenuItem("useW", "Wardjump in combo").SetValue(true));
             Menu.SubMenu("Combo").AddItem(new MenuItem("dsjk", "Wardjump if: "));
             Menu.SubMenu("Combo").AddItem(new MenuItem("wMode", "> AA Range || > Q Range").SetValue(true));
@@ -113,6 +114,8 @@ namespace FuckingAwesomeLeeSin
             insecMenu.AddItem(new MenuItem("insecMode", "Left Click [on] TS [off]").SetValue(true));
             insecMenu.AddItem(new MenuItem("insecOrbwalk", "Orbwalking?").SetValue(true));
             insecMenu.AddItem(new MenuItem("flashInsec", "Flash insec?").SetValue(false));
+            insecMenu.AddItem(new MenuItem("waitForQBuff", "Wait For Q Buff to go?").SetValue(false));
+            insecMenu.AddItem(new MenuItem("22222222222222", "(Faster off more dmg on)"));
             insecMenu.AddItem(new MenuItem("insec2champs", "Insec to allies?").SetValue(true));
             insecMenu.AddItem(new MenuItem("bonusRangeA", "Ally Bonus Range").SetValue(new Slider(0, 0, 1000)));
             insecMenu.AddItem(new MenuItem("insec2tower", "Insec to towers?").SetValue(true));
@@ -275,7 +278,12 @@ namespace FuckingAwesomeLeeSin
         static InsecComboStepSelect InsecComboStep;
         static void InsecCombo(Obj_AI_Hero target)
         {
-              if (InsecComboStep == InsecComboStepSelect.NONE && getInsecPos(target).Distance(_player.Position) < 600) InsecComboStep = InsecComboStepSelect.WGAPCLOSE;
+            if (_player.Distance(getInsecPos(target)) < 200)
+            {
+                R.CastOnUnit(target, true);
+                InsecComboStep = InsecComboStepSelect.PRESSR;
+            }
+            else if (InsecComboStep == InsecComboStepSelect.NONE && getInsecPos(target).Distance(_player.Position) < 600) InsecComboStep = InsecComboStepSelect.WGAPCLOSE;
              else if(InsecComboStep == InsecComboStepSelect.NONE && target.Distance(_player) < Q.Range) InsecComboStep = InsecComboStepSelect.QGAPCLOSE; 
              
             switch (InsecComboStep)
@@ -292,12 +300,12 @@ namespace FuckingAwesomeLeeSin
                     }
                     break;
                 case InsecComboStepSelect.WGAPCLOSE:
-                    if (W.IsReady() && W.Instance.Name == "BlindMonkWOne")
+                    if (W.IsReady() && W.Instance.Name == "BlindMonkWOne" && (paramBool("waitForQBuff") ? !(target.HasBuff("BlindMonkQOne", true) || target.HasBuff("blindmonkqonechaos", true)) : true))
                     {
                         WardJump(getInsecPos(target), false, false, true);
                         wardJumped = true;
                     }
-                    else if (_player.SummonerSpellbook.CanUseSpell(flashSlot) == SpellState.Ready && paramBool("flashInsec") && !wardJumped && _player.Distance(insecPos) < 400 || _player.SummonerSpellbook.CanUseSpell(flashSlot) == SpellState.Ready && paramBool("flashInsec") && !wardJumped && _player.Distance(insecPos) < 400 && FindBestWardItem() == null)
+                    else if (_player.SummonerSpellbook.CanUseSpell(flashSlot) == SpellState.Ready && paramBool("flashInsec") && !wardJumped && _player.Distance(insecPos) < 400 || _player.SummonerSpellbook.CanUseSpell(flashSlot) == SpellState.Ready && paramBool("flashInsec") && !wardJumped && _player.Distance(insecPos) < 400 && GetWardSlot() == null)
                     {
                         _player.SummonerSpellbook.CastSpell(flashSlot, getInsecPos(target));
                         Utility.DelayAction.Add(50, () => R.CastOnUnit(target, true));
@@ -499,18 +507,16 @@ namespace FuckingAwesomeLeeSin
         {
             return _player.Spellbook.Spells.FirstOrDefault(spell => (int)spell.Slot == invSlot.Slot + 4);
         }
-        private static InventorySlot FindBestWardItem()
+        public static InventorySlot GetWardSlot()
         {
-            var slot = Items.GetWardSlot();
-            if (slot == default(InventorySlot)) return null;
-
-            var sdi = GetItemSpell(slot);
-
-            if (sdi != default(SpellDataInst) && sdi.State == SpellState.Ready)
+            Int32[] wardIds = { 3340, 3361, 3205, 3207, 3154, 3160, 2049, 2045, 2050, 2044 };
+            InventorySlot warditem = null;
+            foreach (var wardId in wardIds)
             {
-                return slot;
+                warditem = _player.InventoryItems.FirstOrDefault(i => i.Id == (ItemId)wardId);
+                if (warditem != null && _player.Spellbook.Spells.First(i => (Int32)i.Slot == warditem.Slot + 4).State == SpellState.Ready) return warditem;
             }
-            return null;
+            return warditem;
         }
         public static bool packets()
         {
@@ -655,7 +661,7 @@ namespace FuckingAwesomeLeeSin
             if (JumpPos == new Vector2())
             {
                 if (reqinMaxRange) JumpPos = pos.To2D();
-                else if (maxRange || _player.Distance(pos) > 600) JumpPos = basePos + (newPos.Normalized()*(600));
+                else if (maxRange || _player.Distance(pos) > 590) JumpPos = basePos + (newPos.Normalized() * (590));
                 else JumpPos = basePos + (newPos.Normalized()*(_player.Distance(pos)));
             }
             if (JumpPos != new Vector2() && reCheckWard)
@@ -712,10 +718,10 @@ namespace FuckingAwesomeLeeSin
             }
             if (!isWard && CastWardAgain)
             {
-                var ward = FindBestWardItem();
+                var ward = GetWardSlot();
                 ward.UseItem(JumpPos.To3D());
                 CastWardAgain = false;
-                Utility.DelayAction.Add(1000, () => CastWardAgain = true);
+                Utility.DelayAction.Add(500, () => CastWardAgain = true);
             }
         }
 
@@ -756,14 +762,13 @@ namespace FuckingAwesomeLeeSin
             if (target == null) return;
             if (R.GetDamage(target) >= target.Health && paramBool("ksR")) R.Cast();
             useItems(target);
-            if ((target.HasBuff("BlindMonkQOne", true) || target.HasBuff("blindmonkqonechaos", true)) && paramBool("useQ"))
+            if ((target.HasBuff("BlindMonkQOne", true) || target.HasBuff("blindmonkqonechaos", true)) && paramBool("useQ2"))
             {
                 if (CastQAgain || target.HasBuffOfType(BuffType.Knockup) && !_player.IsValidTarget(300) && !R.IsReady() || !target.IsValidTarget(LXOrbwalker.GetAutoAttackRange(_player)) && !R.IsReady())
                 {
                     Q.Cast();
                 }
             }
-
             if (paramBool("useW"))
             {
                 if (paramBool("wMode") && target.Distance(_player) > LXOrbwalker.GetAutoAttackRange(_player))
@@ -777,7 +782,7 @@ namespace FuckingAwesomeLeeSin
                 !target.IsValidTarget(LXOrbwalker.GetAutoAttackRange(_player)) && paramBool("useE"))
                 E.Cast();
 
-            if (Q.IsReady() && Q.Instance.Name == "BlindMonkQOne" && paramBool("useE"))
+            if (Q.IsReady() && Q.Instance.Name == "BlindMonkQOne" && paramBool("useQ"))
                 CastQ1(target);
 
             if (R.IsReady() && Q.IsReady() &&
