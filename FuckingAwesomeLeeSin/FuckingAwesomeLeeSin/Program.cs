@@ -8,6 +8,7 @@ ___________             __   .__                    _____                       
 */
 using System.Collections.Generic;
 using System.Runtime.Remoting.Messaging;
+using System.Security.AccessControl;
 using LeagueSharp;
 using LeagueSharp.Common;
 using LX_Orbwalker;
@@ -36,6 +37,8 @@ namespace FuckingAwesomeLeeSin
         public static Obj_AI_Base minionerimo;
         public static bool checkSmite = false;
         public static bool delayW = false;
+        public static Vector2 insecLinePos;
+        public static float TimeOffset;
 
         private static readonly string[] epics =
         {
@@ -167,6 +170,7 @@ namespace FuckingAwesomeLeeSin
             //Exploits
             var miscMenu = new Menu("Misc", "Misc");
             miscMenu.AddItem(new MenuItem("NFE", "Use Packets?").SetValue(true));
+            miscMenu.AddItem(new MenuItem("QHC", "Q Hitchance").SetValue(new StringList(new []{"LOW", "MEDIUM", "HIGH"}, 1)));
             miscMenu.AddItem(new MenuItem("IGNks", "Use Ignite?").SetValue(true));
             miscMenu.AddItem(new MenuItem("qSmite", "Smite Q!").SetValue(true));
             Menu.AddSubMenu(miscMenu);
@@ -256,20 +260,23 @@ namespace FuckingAwesomeLeeSin
                 insecPos = _player.Position;
             }
             var turrets = (from tower in ObjectManager.Get<Obj_Turret>()
-                           where tower.IsAlly && !tower.IsDead && target.Distance(tower.Position) < 1000 + Menu.Item("bonusRangeT").GetValue<Slider>().Value && tower.Health > 0
+                           where tower.IsAlly && !tower.IsDead && target.Distance(tower.Position) < 1500 + Menu.Item("bonusRangeT").GetValue<Slider>().Value && tower.Health > 0
                 select tower).ToList();
-            if (GetAllyHeroes(target, 2000).Count > 0 && paramBool("insec2champs"))
+            if (GetAllyHeroes(target, 2000 + Menu.Item("bonusRangeA").GetValue<Slider>().Value).Count > 0 && paramBool("insec2champs"))
             {
-                Vector3 insecPosition = InterceptionPoint(GetAllyInsec(GetAllyHeroes(target, 2000)));
+                Vector3 insecPosition = InterceptionPoint(GetAllyInsec(GetAllyHeroes(target, 2000 + Menu.Item("bonusRangeA").GetValue<Slider>().Value)));
+                insecLinePos = Drawing.WorldToScreen(insecPosition);
                 return V2E(insecPosition, target.Position, target.Distance(insecPosition) + 200).To3D();
 
             } 
             if(turrets.Any() && paramBool("insec2tower"))
             {
+                insecLinePos = Drawing.WorldToScreen(turrets[0].Position);
                 return V2E(turrets[0].Position, target.Position, target.Distance(turrets[0].Position) + 200).To3D();
             }
             if (paramBool("insec2orig"))
             {
+                insecLinePos = Drawing.WorldToScreen(insecPos);
                 return V2E(insecPos, target.Position, target.Distance(insecPos) + 200).To3D();
             }
             return new Vector3();
@@ -278,43 +285,56 @@ namespace FuckingAwesomeLeeSin
         static InsecComboStepSelect InsecComboStep;
         static void InsecCombo(Obj_AI_Hero target)
         {
-            if (_player.Distance(getInsecPos(target)) < 200)
+            if (target != null && target.IsVisible)
             {
-                R.CastOnUnit(target, true);
-                InsecComboStep = InsecComboStepSelect.PRESSR;
-            }
-            else if (InsecComboStep == InsecComboStepSelect.NONE && getInsecPos(target).Distance(_player.Position) < 600) InsecComboStep = InsecComboStepSelect.WGAPCLOSE;
-             else if(InsecComboStep == InsecComboStepSelect.NONE && target.Distance(_player) < Q.Range) InsecComboStep = InsecComboStepSelect.QGAPCLOSE; 
-             
-            switch (InsecComboStep)
-            {
-                case InsecComboStepSelect.QGAPCLOSE:
-                    if (!(target.HasBuff("BlindMonkQOne", true) || target.HasBuff("blindmonkqonechaos", true)) && Q.Instance.Name == "BlindMonkQOne")
-                    {
-                        CastQ1(target);
-                    }
-                    else if ((target.HasBuff("BlindMonkQOne", true) || target.HasBuff("blindmonkqonechaos", true)))
-                    {
-                        Q.Cast();
-                        InsecComboStep = InsecComboStepSelect.WGAPCLOSE;
-                    }
-                    break;
-                case InsecComboStepSelect.WGAPCLOSE:
-                    if (W.IsReady() && W.Instance.Name == "BlindMonkWOne" && (paramBool("waitForQBuff") ? !(target.HasBuff("BlindMonkQOne", true) || target.HasBuff("blindmonkqonechaos", true)) : true))
-                    {
-                        WardJump(getInsecPos(target), false, false, true);
-                        wardJumped = true;
-                    }
-                    else if (_player.SummonerSpellbook.CanUseSpell(flashSlot) == SpellState.Ready && paramBool("flashInsec") && !wardJumped && _player.Distance(insecPos) < 400 || _player.SummonerSpellbook.CanUseSpell(flashSlot) == SpellState.Ready && paramBool("flashInsec") && !wardJumped && _player.Distance(insecPos) < 400 && GetWardSlot() == null)
-                    {
-                        _player.SummonerSpellbook.CastSpell(flashSlot, getInsecPos(target));
-                        Utility.DelayAction.Add(50, () => R.CastOnUnit(target, true));
-                    }
-                    break;
-                case InsecComboStepSelect.PRESSR:
+                if (_player.Distance(getInsecPos(target)) < 200)
+                {
                     R.CastOnUnit(target, true);
-                    break;
-                    
+                    InsecComboStep = InsecComboStepSelect.PRESSR;
+                }
+                else if (InsecComboStep == InsecComboStepSelect.NONE &&
+                         getInsecPos(target).Distance(_player.Position) < 600)
+                    InsecComboStep = InsecComboStepSelect.WGAPCLOSE;
+                else if (InsecComboStep == InsecComboStepSelect.NONE && target.Distance(_player) < Q.Range)
+                    InsecComboStep = InsecComboStepSelect.QGAPCLOSE;
+
+                switch (InsecComboStep)
+                {
+                    case InsecComboStepSelect.QGAPCLOSE:
+                        if (!(target.HasBuff("BlindMonkQOne", true) || target.HasBuff("blindmonkqonechaos", true)) &&
+                            Q.Instance.Name == "BlindMonkQOne")
+                        {
+                            CastQ1(target);
+                        }
+                        else if ((target.HasBuff("BlindMonkQOne", true) || target.HasBuff("blindmonkqonechaos", true)))
+                        {
+                            Q.Cast();
+                            InsecComboStep = InsecComboStepSelect.WGAPCLOSE;
+                        }
+                        break;
+                    case InsecComboStepSelect.WGAPCLOSE:
+                        if (W.IsReady() && W.Instance.Name == "BlindMonkWOne" &&
+                            (paramBool("waitForQBuff")
+                                ? !(target.HasBuff("BlindMonkQOne", true) || target.HasBuff("blindmonkqonechaos", true))
+                                : true))
+                        {
+                            WardJump(getInsecPos(target), false, false, true);
+                            wardJumped = true;
+                        }
+                        else if (_player.SummonerSpellbook.CanUseSpell(flashSlot) == SpellState.Ready &&
+                                 paramBool("flashInsec") && !wardJumped && _player.Distance(insecPos) < 400 ||
+                                 _player.SummonerSpellbook.CanUseSpell(flashSlot) == SpellState.Ready &&
+                                 paramBool("flashInsec") && !wardJumped && _player.Distance(insecPos) < 400 &&
+                                 Items.GetWardSlot() == null)
+                        {
+                            _player.SummonerSpellbook.CastSpell(flashSlot, getInsecPos(target));
+                            Utility.DelayAction.Add(50, () => R.CastOnUnit(target, true));
+                        }
+                        break;
+                    case InsecComboStepSelect.PRESSR:
+                        R.CastOnUnit(target, true);
+                        break;
+                }
             }
         }
         static Vector3 InterceptionPoint(List<Obj_AI_Hero> heroes)
@@ -466,8 +486,10 @@ namespace FuckingAwesomeLeeSin
                    ? SimpleTs.GetSelectedTarget()
                    : SimpleTs.GetTarget(Q.Range + 200, SimpleTs.DamageType.Physical);
             if (Menu.Item("instaFlashInsec").GetValue<KeyBind>().Active) Drawing.DrawText(960, 340, System.Drawing.Color.Red, "FLASH INSEC ENABLED");
-            if(newTarget!= null)
+            if (newTarget != null && newTarget.IsVisible && _player.Distance(newTarget) < 3000)
             {
+                Vector2 targetPos = Drawing.WorldToScreen(newTarget.Position);
+                Drawing.DrawLine(insecLinePos.X, insecLinePos.Y, targetPos.X, targetPos.Y, 10, System.Drawing.Color.White);
                 Utility.DrawCircle(getInsecPos(newTarget), 100, System.Drawing.Color.White);
             }
             if (Menu.Item("smiteEnabled").GetValue<KeyBind>().Active && paramBool("drawSmite"))
@@ -477,7 +499,7 @@ namespace FuckingAwesomeLeeSin
             if (Menu.Item("wjump").GetValue<KeyBind>().Active && paramBool("WJDraw"))
             {   
                 Utility.DrawCircle(JumpPos.To3D(), 20, System.Drawing.Color.Red);
-                Utility.DrawCircle(_player.Position, 550, System.Drawing.Color.Red);
+                Utility.DrawCircle(_player.Position, 600, System.Drawing.Color.Red);
             }
             if (paramBool("drawQ")) Utility.DrawCircle(_player.Position, Q.Range - 80, Q.IsReady() ? System.Drawing.Color.LightSkyBlue :System.Drawing.Color.Tomato);
             if (paramBool("drawW")) Utility.DrawCircle(_player.Position, W.Range - 80, W.IsReady() ? System.Drawing.Color.LightSkyBlue :System.Drawing.Color.Tomato);
@@ -506,17 +528,6 @@ namespace FuckingAwesomeLeeSin
         private static SpellDataInst GetItemSpell(InventorySlot invSlot)
         {
             return _player.Spellbook.Spells.FirstOrDefault(spell => (int)spell.Slot == invSlot.Slot + 4);
-        }
-        public static InventorySlot GetWardSlot()
-        {
-            Int32[] wardIds = { 3340, 3361, 3205, 3207, 3154, 3160, 2049, 2045, 2050, 2044 };
-            InventorySlot warditem = null;
-            foreach (var wardId in wardIds)
-            {
-                warditem = _player.InventoryItems.FirstOrDefault(i => i.Id == (ItemId)wardId);
-                if (warditem != null && _player.Spellbook.Spells.First(i => (Int32)i.Slot == warditem.Slot + 4).State == SpellState.Ready) return warditem;
-            }
-            return warditem;
         }
         public static bool packets()
         {
@@ -634,7 +645,6 @@ namespace FuckingAwesomeLeeSin
                     }
                     else if (W.Instance.Name != "BlindMonkWOne" && (!passiveIsActive))
                     {
-                        if (!passiveIsActive)
                         W.CastOnUnit(_player);
                     }
                 }
@@ -718,7 +728,7 @@ namespace FuckingAwesomeLeeSin
             }
             if (!isWard && CastWardAgain)
             {
-                var ward = GetWardSlot();
+                var ward = Items.GetWardSlot();
                 ward.UseItem(JumpPos.To3D());
                 CastWardAgain = false;
                 Utility.DelayAction.Add(500, () => CastWardAgain = true);
@@ -799,12 +809,27 @@ namespace FuckingAwesomeLeeSin
             }
             else if(Qpred.CollisionObjects.Count == 0)
             {
-                Q.Cast(target, packets());
+                var minChance = GetHitChance(Menu.Item("QHC").GetValue<StringList>());
+                Q.CastIfHitchanceEquals(target, minChance, true);
             }
         }
         public static bool paramBool(String paramName)
         {
             return Menu.Item(paramName).GetValue<bool>();
+        }
+
+        public static HitChance GetHitChance(StringList stringList)
+        {
+            switch (stringList.SelectedIndex)
+            {
+                case 0:
+                    return HitChance.Low;
+                case 1:
+                    return HitChance.Medium;
+                case 2:
+                    return HitChance.High;
+            }
+            return HitChance.Medium;
         }
 
         public static bool hpLowerParam(Obj_AI_Base obj, String paramName)
