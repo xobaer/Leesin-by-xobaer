@@ -489,7 +489,7 @@ namespace FuckingAwesomeLeeSin
             if (newTarget != null && newTarget.IsVisible && _player.Distance(newTarget) < 3000)
             {
                 Vector2 targetPos = Drawing.WorldToScreen(newTarget.Position);
-                Drawing.DrawLine(insecLinePos.X, insecLinePos.Y, targetPos.X, targetPos.Y, 10, System.Drawing.Color.White);
+                Drawing.DrawLine(insecLinePos.X, insecLinePos.Y, targetPos.X, targetPos.Y, 3, System.Drawing.Color.White);
                 Utility.DrawCircle(getInsecPos(newTarget), 100, System.Drawing.Color.White);
             }
             if (Menu.Item("smiteEnabled").GetValue<KeyBind>().Active && paramBool("drawSmite"))
