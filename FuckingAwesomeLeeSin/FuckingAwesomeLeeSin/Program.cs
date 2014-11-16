@@ -196,8 +196,6 @@ namespace FuckingAwesomeLeeSin
             return _player.SummonerSpellbook.CanUseSpell(smiteSlot) == SpellState.Ready ? dmg.Max() : 0;
         }
 
-
-
         public static void Harass()
         {
             var target = SimpleTs.GetTarget(Q.Range + 200, SimpleTs.DamageType.Physical);
@@ -328,7 +326,7 @@ namespace FuckingAwesomeLeeSin
                                  paramBool("flashInsec") && !wardJumped && _player.Distance(insecPos) < 400 ||
                                  _player.SummonerSpellbook.CanUseSpell(flashSlot) == SpellState.Ready &&
                                  paramBool("flashInsec") && !wardJumped && _player.Distance(insecPos) < 400 &&
-                                 Items.GetWardSlot() == null)
+                                 FindBestWardItem() == null)
                         {
                             _player.SummonerSpellbook.CastSpell(flashSlot, getInsecPos(target));
                             Utility.DelayAction.Add(50, () => R.CastOnUnit(target, true));
