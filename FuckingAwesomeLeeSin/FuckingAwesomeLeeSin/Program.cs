@@ -39,6 +39,8 @@ namespace FuckingAwesomeLeeSin
         public static bool delayW = false;
         public static Vector2 insecLinePos;
         public static float TimeOffset;
+        public static Vector3 lastWardPos;
+        public static float lastPlaced;
 
         private static readonly string[] epics =
         {
@@ -180,6 +182,7 @@ namespace FuckingAwesomeLeeSin
             Drawing.OnDraw += Drawing_OnDraw; // Add onDraw
             Game.OnGameUpdate += Game_OnGameUpdate; // adds OnGameUpdate (Same as onTick in bol)
             Obj_AI_Base.OnProcessSpellCast += Obj_AI_Base_OnProcessSpellCast;
+            GameObject.OnCreate += GameObject_OnCreate;
 
             PrintMessage("Loaded!");
         }
@@ -728,10 +731,40 @@ namespace FuckingAwesomeLeeSin
             }
             if (!isWard && CastWardAgain)
             {
-                var ward = Items.GetWardSlot();
+                var ward = FindBestWardItem();
+                if (ward == null) return;
                 ward.UseItem(JumpPos.To3D());
                 CastWardAgain = false;
+                lastWardPos = JumpPos.To3D();
+                lastPlaced = Environment.TickCount;
                 Utility.DelayAction.Add(500, () => CastWardAgain = true);
+            }
+        }
+
+        //Thanks to xSallice the gumbo
+        private static InventorySlot FindBestWardItem()
+        {
+            InventorySlot slot = Items.GetWardSlot();
+            if (slot == default(InventorySlot)) return null;
+
+            SpellDataInst sdi = GetItemSpell(slot);
+
+            if (sdi != default(SpellDataInst) && sdi.State == SpellState.Ready)
+            {
+                return slot;
+            }
+            return slot;
+        }
+
+        private static void GameObject_OnCreate(GameObject sender, EventArgs args)
+        {
+            if (Environment.TickCount < lastPlaced + 300)
+            {
+                var ward = (Obj_AI_Minion)sender;
+                if (ward.Name.ToLower().Contains("ward") && ward.Distance(lastWardPos) < 500 && E.IsReady())
+                {
+                    W.Cast(ward);
+                }
             }
         }
 
