@@ -11,7 +11,6 @@ using System.Runtime.Remoting.Messaging;
 using System.Security.AccessControl;
 using LeagueSharp;
 using LeagueSharp.Common;
-using LX_Orbwalker;
 using SharpDX;
 using System;
 using System.Linq;
@@ -21,6 +20,7 @@ namespace FuckingAwesomeLeeSin
     class Program
     {
         public static string ChampName = "LeeSin";
+        public static Orbwalking.Orbwalker Orbwalker;
         private static Obj_AI_Hero _player = ObjectManager.Player; // Instead of typing ObjectManager.Player you can just type _player
         public static Spell Q,W, E, R;
         public static Spellbook SBook;
@@ -80,7 +80,7 @@ namespace FuckingAwesomeLeeSin
             Menu = new Menu("FALeeSin", ChampName, true);
             //Orbwalker and menu
             Menu.AddSubMenu(new Menu("Orbwalker", "Orbwalker"));
-            LXOrbwalker.AddToMenu(Menu.SubMenu("Orbwalker"));
+            Orbwalker = new Orbwalking.Orbwalker(Menu.SubMenu("Orbwalker"));
             //Target selector and menu
             var ts = new Menu("Target Selector", "Target Selector");
             SimpleTs.AddToMenu(ts);
@@ -89,7 +89,7 @@ namespace FuckingAwesomeLeeSin
             Menu.AddSubMenu(new Menu("Combo", "Combo"));
             Menu.SubMenu("Combo").AddItem(new MenuItem("useQ", "Use Q?").SetValue(true));
             Menu.SubMenu("Combo").AddItem(new MenuItem("useQ2", "Use Q2?").SetValue(true));
-            Menu.SubMenu("Combo").AddItem(new MenuItem("useW", "Wardjump in combo").SetValue(true));
+            Menu.SubMenu("Combo").AddItem(new MenuItem("useW", "Wardjump in combo").SetValue(false));
             Menu.SubMenu("Combo").AddItem(new MenuItem("dsjk", "Wardjump if: "));
             Menu.SubMenu("Combo").AddItem(new MenuItem("wMode", "> AA Range || > Q Range").SetValue(true));
             Menu.SubMenu("Combo").AddItem(new MenuItem("useE", "Use E?").SetValue(true));
@@ -207,7 +207,7 @@ namespace FuckingAwesomeLeeSin
             if (q2 && Q.IsReady() &&
                 (target.HasBuff("BlindMonkQOne", true) || target.HasBuff("blindmonkqonechaos", true)))
             {
-                if(CastQAgain || !target.IsValidTarget(LXOrbwalker.GetAutoAttackRange(_player))) Q.Cast();
+                if(CastQAgain || !target.IsValidTarget(Orbwalking.GetRealAutoAttackRange(_player))) Q.Cast();
             }
             if (e && E.IsReady() && target.IsValidTarget(E.Range) && E.Instance.Name == "BlindMonkEOne") E.Cast();
 
@@ -463,16 +463,16 @@ namespace FuckingAwesomeLeeSin
                 isNullInsecPos = true;
                 wardJumped = false;
             }
-            if(LXOrbwalker.CurrentMode != LXOrbwalker.Mode.Combo) InsecComboStep = InsecComboStepSelect.NONE;
-            switch (LXOrbwalker.CurrentMode)
+            if(Orbwalker.ActiveMode != Orbwalking.OrbwalkingMode.Combo) InsecComboStep = InsecComboStepSelect.NONE;
+            switch (Orbwalker.ActiveMode)
             {
-                case LXOrbwalker.Mode.Combo:
+                case Orbwalking.OrbwalkingMode.Combo:
                     StarCombo();
                     break;
-                case LXOrbwalker.Mode.LaneClear:
+                case Orbwalking.OrbwalkingMode.LaneClear:
                     AllClear();
                     break;
-                case LXOrbwalker.Mode.Harass:
+                case Orbwalking.OrbwalkingMode.Mixed:
                     Harass();
                     break;
 
@@ -524,7 +524,7 @@ namespace FuckingAwesomeLeeSin
         }
         public static void Orbwalk(Vector3 pos, Obj_AI_Hero target = null)
         {
-            LXOrbwalker.Orbwalk(pos, target);
+            Orbwalker.SetOrbwalkingPoint(pos);
         }
         private static SpellDataInst GetItemSpell(InventorySlot invSlot)
         {
@@ -632,7 +632,7 @@ namespace FuckingAwesomeLeeSin
                              minion.HasBuff("blindmonkqonechaos", true)) && (!passiveIsActive || Q.IsKillable(minion, 1)) ||
                              _player.Distance(minion) > 500) Q.Cast();
                 }
-                if (paramBool("useWClear") && isJung && _player.Distance(minion) < LXOrbwalker.GetAutoAttackRange(_player))
+                if (paramBool("useWClear") && isJung && _player.Distance(minion) < Orbwalking.GetRealAutoAttackRange(_player))
                 {
                     if (W.Instance.Name == "BlindMonkWOne" && !delayW)
                     {
@@ -774,7 +774,7 @@ namespace FuckingAwesomeLeeSin
             useItems(target);
             if ((target.HasBuff("BlindMonkQOne", true) || target.HasBuff("blindmonkqonechaos", true)))
             {
-                if (CastQAgain || target.HasBuffOfType(BuffType.Knockup) && !_player.IsValidTarget(300) && !R.IsReady() || !target.IsValidTarget(LXOrbwalker.GetAutoAttackRange(_player)) && !R.IsReady())
+                if (CastQAgain || target.HasBuffOfType(BuffType.Knockup) && !_player.IsValidTarget(300) && !R.IsReady() || !target.IsValidTarget(Orbwalking.GetRealAutoAttackRange(_player)) && !R.IsReady())
                 {
                     Q.Cast();
                 }
@@ -787,7 +787,7 @@ namespace FuckingAwesomeLeeSin
                 E.Cast();
 
             if (E.IsReady() && E.Instance.Name != "BlindMonkEOne" &&
-                !target.IsValidTarget(LXOrbwalker.GetAutoAttackRange(_player)))
+                !target.IsValidTarget(Orbwalking.GetRealAutoAttackRange(_player)))
                 E.Cast();
 
             if (Q.IsReady() && Q.Instance.Name == "BlindMonkQOne")
@@ -805,14 +805,14 @@ namespace FuckingAwesomeLeeSin
             useItems(target);
             if ((target.HasBuff("BlindMonkQOne", true) || target.HasBuff("blindmonkqonechaos", true)) && paramBool("useQ2"))
             {
-                if (CastQAgain || target.HasBuffOfType(BuffType.Knockup) && !_player.IsValidTarget(300) && !R.IsReady() || !target.IsValidTarget(LXOrbwalker.GetAutoAttackRange(_player)) && !R.IsReady())
+                if (CastQAgain || target.HasBuffOfType(BuffType.Knockup) && !_player.IsValidTarget(300) && !R.IsReady() || !target.IsValidTarget(Orbwalking.GetRealAutoAttackRange(_player)) && !R.IsReady() || Q.GetDamage(target, 1) > target.Health)
                 {
                     Q.Cast();
                 }
             }
             if (paramBool("useW"))
             {
-                if (paramBool("wMode") && target.Distance(_player) > LXOrbwalker.GetAutoAttackRange(_player))
+                if (paramBool("wMode") && target.Distance(_player) > Orbwalking.GetRealAutoAttackRange(_player))
                     WardJump(target.Position, false, true);
                 else if (!paramBool("wMode") && target.Distance(_player) > Q.Range) WardJump(target.Position, false, true);
             }
@@ -820,7 +820,7 @@ namespace FuckingAwesomeLeeSin
                 E.Cast();
 
             if (E.IsReady() && E.Instance.Name != "BlindMonkEOne" &&
-                !target.IsValidTarget(LXOrbwalker.GetAutoAttackRange(_player)) && paramBool("useE"))
+                !target.IsValidTarget(Orbwalking.GetRealAutoAttackRange(_player)) && paramBool("useE"))
                 E.Cast();
 
             if (Q.IsReady() && Q.Instance.Name == "BlindMonkQOne" && paramBool("useQ"))
