@@ -44,15 +44,15 @@ namespace FuckingAwesomeLeeSin
 
         private static readonly string[] epics =
         {
-            "Worm", "Dragon"
+            "SRU_BaronSpawn", "SRU_Dragon"
         };
         private static readonly string[] buffs =
         {
-            "LizardElder", "AncientGolem"
+            "SRU_Red", "SRU_Blue"
         };
         private static readonly string[] buffandepics =
         {
-            "LizardElder", "AncientGolem", "Worm", "Dragon"
+            "SRU_Red", "SRU_Blue", "SRU_Dragon", "SRU_BaronSpawn"
         };
 
         // ReSharper disable once UnusedParameter.Local
@@ -387,7 +387,7 @@ namespace FuckingAwesomeLeeSin
             {
                 foreach (var minionName in epics)
                 {
-                    if (minion.Name.ToLower().Contains(minionName.ToLower()) && hpLowerParam(minion, "hpEpics") && paramBool("dEpics"))
+                    if (minion.BaseSkinName == minionName && hpLowerParam(minion, "hpEpics") && paramBool("dEpics"))
                     {
                         epicSafe = true;
                         break;
@@ -395,7 +395,7 @@ namespace FuckingAwesomeLeeSin
                 }
                 foreach (var minionName in buffs)
                 {
-                    if (minion.Name.ToLower().Contains(minionName.ToLower()) && hpLowerParam(minion, "hpBuffs") && paramBool("dBuffs"))
+                    if (minion.BaseSkinName == minionName && hpLowerParam(minion, "hpBuffs") && paramBool("dBuffs"))
                     {
                         buffSafe = true;
                         break;
@@ -425,6 +425,7 @@ namespace FuckingAwesomeLeeSin
         static void Game_OnGameUpdate(EventArgs args)
         {
             if(Player.IsDead) return;
+            smiteSlot = Player.GetSpellSlot(smitetype());
             if ((paramBool("insecMode")
                 ? SimpleTs.GetSelectedTarget()
                 : SimpleTs.GetTarget(Q.Range + 200, SimpleTs.DamageType.Physical)) == null)
@@ -543,12 +544,13 @@ namespace FuckingAwesomeLeeSin
             {
                 foreach (var name in buffandepics)
                 {
-                    if (minion.Name.ToLower().Contains(name.ToLower()))
+                    if (minion.BaseSkinName == name)
                     {
                         minionerimo = minion;
                         if (SmiteDmg() > minion.Health && minion.IsValidTarget(780) && paramBool("normSmite")) Player.SummonerSpellbook.CastSpell(smiteSlot, minion);
-                        if (minion.Distance(Player) < 200 && SmiteDmg() > minion.Health && checkSmite)
+                        if (minion.Distance(Player) < 100 && checkSmite)
                         {
+                            checkSmite = false;
                             Player.SummonerSpellbook.CastSpell(smiteSlot, minion);
                         }
                         if (!Q.IsReady() || !paramBool("qqSmite")) return;
@@ -576,6 +578,35 @@ namespace FuckingAwesomeLeeSin
                 }
             }
         }
+
+        //Start Credits to Kurisu
+        public static readonly int[] SmitePurple = { 3713, 3726, 3725, 3726, 3723 };
+        public static readonly int[] SmiteGrey = { 3711, 3722, 3721, 3720, 3719 };
+        public static readonly int[] SmiteRed = { 3715, 3718, 3717, 3716, 3714 };
+        public static readonly int[] SmiteBlue = { 3706, 3710, 3709, 3708, 3707 };
+
+        public static string smitetype()
+        {
+            if (SmiteBlue.Any(Items.HasItem))
+            {
+                return "s5_summonersmiteplayerganker";
+            }
+            if (SmiteRed.Any(Items.HasItem))
+            {
+                return "s5_summonersmiteduel";
+            }
+            if (SmiteGrey.Any(Items.HasItem))
+            {
+                return "s5_summonersmitequick";
+            }
+            if (SmitePurple.Any(Items.HasItem))
+            {
+                return "itemsmiteaoe";
+            }
+            return "summonersmite";
+        }
+        //End credits
+
         public static void useItems(Obj_AI_Hero enemy)
         {
             if (Items.CanUseItem(3142) && Player.Distance(enemy) <= 600)
@@ -655,9 +686,11 @@ namespace FuckingAwesomeLeeSin
                     if (E.Instance.Name == "BlindMonkEOne" && minion.IsValidTarget(E.Range) && !delayW)
                     {
                         if (!passiveIsActive)
+                        {
                             E.Cast();
-                        delayW = true;
-                        Utility.DelayAction.Add(300, () => delayW = false);
+                            delayW = true;
+                            Utility.DelayAction.Add(300, () => delayW = false);
+                        }
                     }
                     else if (minion.HasBuff("BlindMonkEOne", true) && (!passiveIsActive || Player.Distance(minion) > 450))
                     {
@@ -802,7 +835,7 @@ namespace FuckingAwesomeLeeSin
         {
             var target = SimpleTs.GetTarget(1500, SimpleTs.DamageType.Physical);
             if (target == null) return;
-            if (R.GetDamage(target) >= target.Health && paramBool("ksR")) R.Cast();
+            if (R.GetDamage(target) >= target.Health && paramBool("ksR")) R.Cast(target, packets());
             useItems(target);
             if ((target.HasBuff("BlindMonkQOne", true) || target.HasBuff("blindmonkqonechaos", true)) && paramBool("useQ2"))
             {
