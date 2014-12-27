@@ -83,7 +83,7 @@ namespace FuckingAwesomeLeeSin
             Orbwalker = new Orbwalking.Orbwalker(Menu.SubMenu("Orbwalker"));
             //Target selector and menu
             var ts = new Menu("Target Selector", "Target Selector");
-            SimpleTs.AddToMenu(ts);
+            TargetSelector.AddToMenu(ts);
             Menu.AddSubMenu(ts);
             //Combo menu
             Menu.AddSubMenu(new Menu("Combo", "Combo"));
@@ -193,12 +193,12 @@ namespace FuckingAwesomeLeeSin
             {
                 20*Player.Level + 370, 30*Player.Level + 330, 40*+Player.Level + 240, 50*Player.Level + 100
             };
-            return Player.SummonerSpellbook.CanUseSpell(smiteSlot) == SpellState.Ready ? dmg.Max() : 0;
+            return Player.Spellbook.CanUseSpell(smiteSlot) == SpellState.Ready ? dmg.Max() : 0;
         }
 
         public static void Harass()
         {
-            var target = SimpleTs.GetTarget(Q.Range + 200, SimpleTs.DamageType.Physical);
+            var target = TargetSelector.GetTarget(Q.Range + 200, TargetSelector.DamageType.Physical);
             var q = paramBool("q1H");
             var q2 = paramBool("q2H");
             var e = paramBool("eH");
@@ -230,13 +230,13 @@ namespace FuckingAwesomeLeeSin
             }
             if (Menu.Item("instaFlashInsec").GetValue<KeyBind>().Active && args.SData.Name == "BlindMonkRKick")
             {
-                Player.SummonerSpellbook.CastSpell(flashSlot, getInsecPos((Obj_AI_Hero) (args.Target)));
+                Player.Spellbook.CastSpell(flashSlot, getInsecPos((Obj_AI_Hero) (args.Target)));
             }
             if (args.SData.Name == "summonerflash" && InsecComboStep != InsecComboStepSelect.NONE)
             {
                 Obj_AI_Hero target = paramBool("insecMode")
-                   ? SimpleTs.GetSelectedTarget()
-                   : SimpleTs.GetTarget(Q.Range + 200, SimpleTs.DamageType.Physical);
+                   ? TargetSelector.GetSelectedTarget()
+                   : TargetSelector.GetTarget(Q.Range + 200, TargetSelector.DamageType.Physical);
                 InsecComboStep = InsecComboStepSelect.PRESSR;
                 Utility.DelayAction.Add(80, () => R.CastOnUnit(target, true));
             }
@@ -247,8 +247,8 @@ namespace FuckingAwesomeLeeSin
             if (args.SData.Name == "BlindMonkWOne" && InsecComboStep == InsecComboStepSelect.NONE)
             {
                 Obj_AI_Hero target = paramBool("insecMode")
-                    ? SimpleTs.GetSelectedTarget()
-                    : SimpleTs.GetTarget(Q.Range + 200, SimpleTs.DamageType.Physical);
+                    ? TargetSelector.GetSelectedTarget()
+                    : TargetSelector.GetTarget(Q.Range + 200, TargetSelector.DamageType.Physical);
                 InsecComboStep = InsecComboStepSelect.PRESSR;
                 Utility.DelayAction.Add(100, () => R.CastOnUnit(target, true));
             }
@@ -322,13 +322,13 @@ namespace FuckingAwesomeLeeSin
                             WardJump(getInsecPos(target), false, false, true);
                             wardJumped = true;
                         }
-                        else if (Player.SummonerSpellbook.CanUseSpell(flashSlot) == SpellState.Ready &&
+                        else if (Player.Spellbook.CanUseSpell(flashSlot) == SpellState.Ready &&
                                  paramBool("flashInsec") && !wardJumped && Player.Distance(insecPos) < 400 ||
-                                 Player.SummonerSpellbook.CanUseSpell(flashSlot) == SpellState.Ready &&
+                                 Player.Spellbook.CanUseSpell(flashSlot) == SpellState.Ready &&
                                  paramBool("flashInsec") && !wardJumped && Player.Distance(insecPos) < 400 &&
                                  FindBestWardItem() == null)
                         {
-                            Player.SummonerSpellbook.CastSpell(flashSlot, getInsecPos(target));
+                            Player.Spellbook.CastSpell(flashSlot, getInsecPos(target));
                             Utility.DelayAction.Add(50, () => R.CastOnUnit(target, true));
                         }
                         break;
@@ -377,7 +377,7 @@ namespace FuckingAwesomeLeeSin
         }
         public static void SaveMe()
         {
-            if ((Player.Health / Player.MaxHealth * 100) > Menu.Item("hpPercentSM").GetValue<Slider>().Value || Player.SummonerSpellbook.CanUseSpell(smiteSlot) != SpellState.Ready) return;
+            if ((Player.Health / Player.MaxHealth * 100) > Menu.Item("hpPercentSM").GetValue<Slider>().Value || Player.Spellbook.CanUseSpell(smiteSlot) != SpellState.Ready) return;
             var epicSafe = false;
             var buffSafe = false;
             foreach (
@@ -409,7 +409,7 @@ namespace FuckingAwesomeLeeSin
             {
                 if (!W.IsReady() && !Player.HasBuff("BlindMonkIronWill") || smiteSlot == SpellSlot.Unknown ||
                     smiteSlot != SpellSlot.Unknown &&
-                    Player.SummonerSpellbook.CanUseSpell(smiteSlot) != SpellState.Ready) break;
+                    Player.Spellbook.CanUseSpell(smiteSlot) != SpellState.Ready) break;
                 if (minion.Name.ToLower().Contains("ward")) return;
                 if (W.Instance.Name != "blindmonkwtwo")
                 {
@@ -418,7 +418,7 @@ namespace FuckingAwesomeLeeSin
                 }
                 if (Player.HasBuff("BlindMonkIronWill"))
                 {
-                    Player.SummonerSpellbook.CastSpell(smiteSlot, minion);
+                    Player.Spellbook.CastSpell(smiteSlot, minion);
                 }
             }
         }
@@ -427,8 +427,8 @@ namespace FuckingAwesomeLeeSin
             if(Player.IsDead) return;
             smiteSlot = Player.GetSpellSlot(smitetype());
             if ((paramBool("insecMode")
-                ? SimpleTs.GetSelectedTarget()
-                : SimpleTs.GetTarget(Q.Range + 200, SimpleTs.DamageType.Physical)) == null)
+                ? TargetSelector.GetSelectedTarget()
+                : TargetSelector.GetTarget(Q.Range + 200, TargetSelector.DamageType.Physical)) == null)
             {
                 InsecComboStep = InsecComboStepSelect.NONE;
             }
@@ -438,13 +438,13 @@ namespace FuckingAwesomeLeeSin
 
             if (paramBool("IGNks"))
             {
-                Obj_AI_Hero NewTarget = SimpleTs.GetTarget(600, SimpleTs.DamageType.True);
+                Obj_AI_Hero NewTarget = TargetSelector.GetTarget(600, TargetSelector.DamageType.True);
 
                 if (NewTarget != null && IgniteSlot != SpellSlot.Unknown
-                    && Player.SummonerSpellbook.CanUseSpell(IgniteSlot) == SpellState.Ready
+                    && Player.Spellbook.CanUseSpell(IgniteSlot) == SpellState.Ready
                     && ObjectManager.Player.GetSummonerSpellDamage(NewTarget, Damage.SummonerSpell.Ignite) > NewTarget.Health)
                 {
-                    Player.SummonerSpellbook.CastSpell(IgniteSlot, NewTarget);
+                    Player.Spellbook.CastSpell(IgniteSlot, NewTarget);
                 }
             }
             if (Menu.Item("InsecEnabled").GetValue<KeyBind>().Active)
@@ -454,8 +454,8 @@ namespace FuckingAwesomeLeeSin
                     Orbwalk(Game.CursorPos);
                 }
                 Obj_AI_Hero newTarget = paramBool("insecMode")
-                    ? SimpleTs.GetSelectedTarget()
-                    : SimpleTs.GetTarget(Q.Range + 200, SimpleTs.DamageType.Physical);
+                    ? TargetSelector.GetSelectedTarget()
+                    : TargetSelector.GetTarget(Q.Range + 200, TargetSelector.DamageType.Physical);
                 
                  if(newTarget != null) InsecCombo(newTarget);
             }
@@ -485,8 +485,8 @@ namespace FuckingAwesomeLeeSin
         {
             if (!paramBool("DrawEnabled")) return;
             Obj_AI_Hero newTarget = paramBool("insecMode")
-                   ? SimpleTs.GetSelectedTarget()
-                   : SimpleTs.GetTarget(Q.Range + 200, SimpleTs.DamageType.Physical);
+                   ? TargetSelector.GetSelectedTarget()
+                   : TargetSelector.GetTarget(Q.Range + 200, TargetSelector.DamageType.Physical);
             if (Menu.Item("instaFlashInsec").GetValue<KeyBind>().Active) Drawing.DrawText(960, 340, System.Drawing.Color.Red, "FLASH INSEC ENABLED");
             if (newTarget != null && newTarget.IsVisible && Player.Distance(newTarget) < 3000)
             {
@@ -547,11 +547,11 @@ namespace FuckingAwesomeLeeSin
                     if (minion.BaseSkinName == name)
                     {
                         minionerimo = minion;
-                        if (SmiteDmg() > minion.Health && minion.IsValidTarget(780) && paramBool("normSmite")) Player.SummonerSpellbook.CastSpell(smiteSlot, minion);
+                        if (SmiteDmg() > minion.Health && minion.IsValidTarget(780) && paramBool("normSmite")) Player.Spellbook.CastSpell(smiteSlot, minion);
                         if (minion.Distance(Player) < 100 && checkSmite)
                         {
                             checkSmite = false;
-                            Player.SummonerSpellbook.CastSpell(smiteSlot, minion);
+                            Player.Spellbook.CastSpell(smiteSlot, minion);
                         }
                         if (!Q.IsReady() || !paramBool("qqSmite")) return;
 
@@ -765,7 +765,7 @@ namespace FuckingAwesomeLeeSin
             {
                 var ward = FindBestWardItem();
                 if (ward == null) return;
-                ward.UseItem(JumpPos.To3D());
+                Player.Spellbook.CastSpell(ward.SpellSlot, JumpPos.To3D());
                 CastWardAgain = false;
                 lastWardPos = JumpPos.To3D();
                 lastPlaced = Environment.TickCount;
@@ -802,7 +802,7 @@ namespace FuckingAwesomeLeeSin
 
         public static void wardCombo()
         {
-            var target = SimpleTs.GetTarget(1500, SimpleTs.DamageType.Physical);
+            var target = TargetSelector.GetTarget(1500, TargetSelector.DamageType.Physical);
             Orbwalk(Game.CursorPos);
             if (target == null) return;
             useItems(target);
@@ -833,7 +833,7 @@ namespace FuckingAwesomeLeeSin
         }
         public static void StarCombo()
         {
-            var target = SimpleTs.GetTarget(1500, SimpleTs.DamageType.Physical);
+            var target = TargetSelector.GetTarget(1500, TargetSelector.DamageType.Physical);
             if (target == null) return;
             if (R.GetDamage(target) >= target.Health && paramBool("ksR")) R.Cast(target, packets());
             useItems(target);
@@ -867,9 +867,9 @@ namespace FuckingAwesomeLeeSin
         public static void CastQ1(Obj_AI_Hero target)
         {
             var Qpred = Q.GetPrediction(target);
-            if (Qpred.CollisionObjects.Count == 1 && Player.SummonerSpellbook.CanUseSpell(smiteSlot) == SpellState.Ready && paramBool("qSmite") && Q.MinHitChance == HitChance.High && Qpred.CollisionObjects[0].IsValidTarget(780))
+            if (Qpred.CollisionObjects.Count == 1 && Player.Spellbook.CanUseSpell(smiteSlot) == SpellState.Ready && paramBool("qSmite") && Q.MinHitChance == HitChance.High && Qpred.CollisionObjects[0].IsValidTarget(780))
             {
-                Player.SummonerSpellbook.CastSpell(smiteSlot, Qpred.CollisionObjects[0]);
+                Player.Spellbook.CastSpell(smiteSlot, Qpred.CollisionObjects[0]);
                 Utility.DelayAction.Add(70, () => Q.Cast(Qpred.CastPosition, packets()));
             }
             else if(Qpred.CollisionObjects.Count == 0)
