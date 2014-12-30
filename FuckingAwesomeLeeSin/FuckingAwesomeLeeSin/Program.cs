@@ -253,6 +253,7 @@ namespace FuckingAwesomeLeeSin
                 Utility.DelayAction.Add(100, () => R.CastOnUnit(target, true));
             }
         }
+
         public static Vector3 getInsecPos(Obj_AI_Hero target)
         {
             if (isNullInsecPos)
@@ -311,6 +312,13 @@ namespace FuckingAwesomeLeeSin
                         {
                             Q.Cast();
                             InsecComboStep = InsecComboStepSelect.WGAPCLOSE;
+                        }
+                        else
+                        {
+                            if (Q.Instance.Name == "blindmonkqtwo" && returnQBuff().Distance(target) <= 600)
+                            {
+                                Q.Cast();
+                            }
                         }
                         break;
                     case InsecComboStepSelect.WGAPCLOSE:
@@ -375,6 +383,8 @@ namespace FuckingAwesomeLeeSin
         {
             return from.To2D() + distance * Vector3.Normalize(direction - from).To2D();
         }
+
+
         public static void SaveMe()
         {
             if ((Player.Health / Player.MaxHealth * 100) > Menu.Item("hpPercentSM").GetValue<Slider>().Value || Player.Spellbook.CanUseSpell(smiteSlot) != SpellState.Ready) return;
@@ -382,7 +392,7 @@ namespace FuckingAwesomeLeeSin
             var buffSafe = false;
             foreach (
                 var minion in
-                    MinionManager.GetMinions(Player.Position, 1000f, MinionTypes.All, MinionTeam.Neutral,
+                    MinionManager.GetMinions(Player.Position, 1100f, MinionTypes.All, MinionTeam.Neutral,
                         MinionOrderTypes.None))
             {
                 foreach (var minionName in epics)
@@ -422,6 +432,7 @@ namespace FuckingAwesomeLeeSin
                 }
             }
         }
+
         static void Game_OnGameUpdate(EventArgs args)
         {
             if(Player.IsDead) return;
@@ -481,6 +492,7 @@ namespace FuckingAwesomeLeeSin
             if(Menu.Item("wjump").GetValue<KeyBind>().Active)
                 wardjumpToMouse();
         }
+
         static void Drawing_OnDraw(EventArgs args)
         {
             if (!paramBool("DrawEnabled")) return;
@@ -534,6 +546,15 @@ namespace FuckingAwesomeLeeSin
         public static bool packets()
         {
             return Menu.Item("NFE").GetValue<bool>();
+        }
+
+        public static Obj_AI_Base returnQBuff()
+        {
+            foreach (var unit in ObjectManager.Get<Obj_AI_Base>().Where(a=>a.IsValidTarget(1300)))
+            {
+                if (unit.HasBuff("BlindMonkQOne", true) || unit.HasBuff("blindmonkqonechaos", true)) return unit;
+            }
+            return null;
         }
         public static void smiter()
         {
