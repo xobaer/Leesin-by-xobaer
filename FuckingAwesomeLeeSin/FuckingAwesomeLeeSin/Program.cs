@@ -499,7 +499,6 @@ namespace FuckingAwesomeLeeSin
         #region Draw
         static void Drawing_OnDraw(EventArgs args)
         {
-            if (!paramBool("DrawEnabled")) return;
             Obj_AI_Hero newTarget = paramBool("insecMode")
                    ? TargetSelector.GetSelectedTarget()
                    : TargetSelector.GetTarget(Q.Range + 200, TargetSelector.DamageType.Physical);
@@ -510,6 +509,7 @@ namespace FuckingAwesomeLeeSin
                 Drawing.DrawLine(insecLinePos.X, insecLinePos.Y, targetPos.X, targetPos.Y, 3, System.Drawing.Color.White);
                 Utility.DrawCircle(getInsecPos(newTarget), 100, System.Drawing.Color.White);
             }
+            if (!paramBool("DrawEnabled")) return;
             if (Menu.Item("smiteEnabled").GetValue<KeyBind>().Active && paramBool("drawSmite"))
             {
                 Utility.DrawCircle(Player.Position, 700, System.Drawing.Color.White);
