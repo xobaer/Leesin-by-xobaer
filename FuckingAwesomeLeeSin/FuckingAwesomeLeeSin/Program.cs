@@ -798,7 +798,7 @@ namespace FuckingAwesomeLeeSin
                     Q.Cast();
                 }
             }
-            if ((paramBool("aaStacks") && Player.HasBuff("blindmonkpassive_cosmetic", true)) || !target.IsValidTarget(Orbwalking.GetRealAutoAttackRange(Player))) return;
+            if ((paramBool("aaStacks") && Player.HasBuff("blindmonkpassive_cosmetic", true)) || target.IsValidTarget(Orbwalking.GetRealAutoAttackRange(Player))) return;
             if (R.GetDamage(target) >= target.Health && paramBool("ksR")) R.Cast(target, packets());
             useItems(target);
             if (paramBool("useW"))
