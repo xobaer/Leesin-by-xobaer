@@ -91,14 +91,14 @@ namespace FuckingAwesomeLeeSin
             Menu.AddSubMenu(ts);
             //Combo menu
             Menu.AddSubMenu(new Menu("Combo", "Combo"));
-            Menu.SubMenu("Combo").AddItem(new MenuItem("useQ", "Use Q?").SetValue(true));
-            Menu.SubMenu("Combo").AddItem(new MenuItem("useQ2", "Use Q2?").SetValue(true));
+            Menu.SubMenu("Combo").AddItem(new MenuItem("useQ", "Use Q").SetValue(true));
+            Menu.SubMenu("Combo").AddItem(new MenuItem("useQ2", "Use Q2").SetValue(true));
             Menu.SubMenu("Combo").AddItem(new MenuItem("useW", "Wardjump in combo").SetValue(false));
             Menu.SubMenu("Combo").AddItem(new MenuItem("dsjk", "Wardjump if: "));
             Menu.SubMenu("Combo").AddItem(new MenuItem("wMode", "> AA Range || > Q Range").SetValue(true));
-            Menu.SubMenu("Combo").AddItem(new MenuItem("useE", "Use E?").SetValue(true));
-            Menu.SubMenu("Combo").AddItem(new MenuItem("useR", "Use R?").SetValue(false));
-            Menu.SubMenu("Combo").AddItem(new MenuItem("ksR", "KS R?").SetValue(false));
+            Menu.SubMenu("Combo").AddItem(new MenuItem("useE", "Use E").SetValue(true));
+            Menu.SubMenu("Combo").AddItem(new MenuItem("useR", "Use R").SetValue(false));
+            Menu.SubMenu("Combo").AddItem(new MenuItem("ksR", "KS R").SetValue(false));
             Menu.SubMenu("Combo").AddItem(new MenuItem("starCombo", "Star Combo").SetValue(new KeyBind("T".ToCharArray()[0], KeyBindType.Press)));
             Menu.SubMenu("Combo").AddItem(new MenuItem("random2ejwej", "W->Q->R->Q2"));
             Menu.SubMenu("Combo").AddItem(new MenuItem("aaStacks", "Wait for Passive").SetValue(false));
@@ -789,17 +789,18 @@ namespace FuckingAwesomeLeeSin
         }
         public static void StarCombo()
         {
-            var target = TargetSelector.GetTarget(1500, TargetSelector.DamageType.Physical);
-            if (target == null || (paramBool("aaStacks") && Player.HasBuff("blindmonkpassive_cosmetic", true)) ) return;
-            if (R.GetDamage(target) >= target.Health && paramBool("ksR")) R.Cast(target, packets());
-            useItems(target);
+            var target = TargetSelector.GetTarget(1300, TargetSelector.DamageType.Physical);
+            if (target == null) return;
             if ((target.HasBuff("BlindMonkQOne", true) || target.HasBuff("blindmonkqonechaos", true)) && paramBool("useQ2"))
             {
-                if (CastQAgain || target.HasBuffOfType(BuffType.Knockup) && !Player.IsValidTarget(300) && !R.IsReady() || !target.IsValidTarget(Orbwalking.GetRealAutoAttackRange(Player)) && !R.IsReady() || Q.GetDamage(target, 1) > target.Health)
+                if (CastQAgain || target.HasBuffOfType(BuffType.Knockup) && !Player.IsValidTarget(300) && !R.IsReady() || !target.IsValidTarget(Orbwalking.GetRealAutoAttackRange(Player)) || Q.GetDamage(target, 1) > target.Health || returnQBuff().Distance(target) < Player.Distance(target) && !target.IsValidTarget(Orbwalking.GetRealAutoAttackRange(Player)))
                 {
                     Q.Cast();
                 }
             }
+            if ((paramBool("aaStacks") && Player.HasBuff("blindmonkpassive_cosmetic", true)) || !target.IsValidTarget(Orbwalking.GetRealAutoAttackRange(Player))) return;
+            if (R.GetDamage(target) >= target.Health && paramBool("ksR")) R.Cast(target, packets());
+            useItems(target);
             if (paramBool("useW"))
             {
                 if (paramBool("wMode") && target.Distance(Player) > Orbwalking.GetRealAutoAttackRange(Player))
