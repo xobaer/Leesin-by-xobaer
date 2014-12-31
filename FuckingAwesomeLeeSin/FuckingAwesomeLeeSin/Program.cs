@@ -20,7 +20,7 @@ namespace FuckingAwesomeLeeSin
 {
     class Program
     {
-        #region params
+        #region Params
         public static string ChampName = "LeeSin";
         public static Orbwalking.Orbwalker Orbwalker;
         private static Obj_AI_Hero Player = ObjectManager.Player; // Instead of typing ObjectManager.Player you can just type Player
@@ -101,6 +101,7 @@ namespace FuckingAwesomeLeeSin
             Menu.SubMenu("Combo").AddItem(new MenuItem("ksR", "KS R?").SetValue(false));
             Menu.SubMenu("Combo").AddItem(new MenuItem("starCombo", "Star Combo").SetValue(new KeyBind("T".ToCharArray()[0], KeyBindType.Press)));
             Menu.SubMenu("Combo").AddItem(new MenuItem("random2ejwej", "W->Q->R->Q2"));
+            Menu.SubMenu("Combo").AddItem(new MenuItem("aaStacks", "Wait for Passive").SetValue(false));
 
             var harassMenu = new Menu("Harass", "Harass");
             harassMenu.AddItem(new MenuItem("q1H", "Use Q1").SetValue(true));
@@ -111,9 +112,9 @@ namespace FuckingAwesomeLeeSin
 
             //Jung/Wave Clear
             var waveclearMenu = new Menu("Wave/Jung Clear", "wjClear");
-            waveclearMenu.AddItem(new MenuItem("useQClear", "Use Q?").SetValue(true));
-            waveclearMenu.AddItem(new MenuItem("useWClear", "Use W?").SetValue(true));
-            waveclearMenu.AddItem(new MenuItem("useEClear", "Use E?").SetValue(true));
+            waveclearMenu.AddItem(new MenuItem("useQClear", "Use Q").SetValue(true));
+            waveclearMenu.AddItem(new MenuItem("useWClear", "Use W").SetValue(true));
+            waveclearMenu.AddItem(new MenuItem("useEClear", "Use E").SetValue(true));
             Menu.AddSubMenu(waveclearMenu);
 
             //InsecMenu
@@ -121,15 +122,15 @@ namespace FuckingAwesomeLeeSin
             insecMenu.AddItem(new MenuItem("InsecEnabled", "Enabled").SetValue(new KeyBind("Y".ToCharArray()[0], KeyBindType.Press)));
             insecMenu.AddItem(new MenuItem("rnshsasdhjk", "Insec Mode:"));
             insecMenu.AddItem(new MenuItem("insecMode", "Left Click [on] TS [off]").SetValue(true));
-            insecMenu.AddItem(new MenuItem("insecOrbwalk", "Orbwalking?").SetValue(true));
-            insecMenu.AddItem(new MenuItem("flashInsec", "Flash insec?").SetValue(false));
-            insecMenu.AddItem(new MenuItem("waitForQBuff", "Wait For Q Buff to go?").SetValue(false));
+            insecMenu.AddItem(new MenuItem("insecOrbwalk", "Orbwalking").SetValue(true));
+            insecMenu.AddItem(new MenuItem("flashInsec", "Flash insec").SetValue(false));
+            insecMenu.AddItem(new MenuItem("waitForQBuff", "Wait For Q Buff to go").SetValue(false));
             insecMenu.AddItem(new MenuItem("22222222222222", "(Faster off more dmg on)"));
-            insecMenu.AddItem(new MenuItem("insec2champs", "Insec to allies?").SetValue(true));
+            insecMenu.AddItem(new MenuItem("insec2champs", "Insec to allies").SetValue(true));
             insecMenu.AddItem(new MenuItem("bonusRangeA", "Ally Bonus Range").SetValue(new Slider(0, 0, 1000)));
-            insecMenu.AddItem(new MenuItem("insec2tower", "Insec to towers?").SetValue(true));
+            insecMenu.AddItem(new MenuItem("insec2tower", "Insec to towers").SetValue(true));
             insecMenu.AddItem(new MenuItem("bonusRangeT", "Towers Bonus Range").SetValue(new Slider(0, 0, 1000)));
-            insecMenu.AddItem(new MenuItem("insec2orig", "Insec to original pos?").SetValue(true));
+            insecMenu.AddItem(new MenuItem("insec2orig", "Insec to original pos").SetValue(true));
             insecMenu.AddItem(new MenuItem("22222222222", "--"));
             insecMenu.AddItem(new MenuItem("instaFlashInsec1", "Cast R Manually"));
             insecMenu.AddItem(new MenuItem("instaFlashInsec2", "And it will flash to insec pos"));
@@ -166,6 +167,7 @@ namespace FuckingAwesomeLeeSin
 
             var drawMenu = new Menu("Drawing", "Drawing");
             drawMenu.AddItem(new MenuItem("DrawEnabled", "Draw Enabled").SetValue(false));
+            drawMenu.AddItem(new MenuItem("insecDraw", "Draw INSEC").SetValue(true));
             drawMenu.AddItem(new MenuItem("WJDraw", "Draw WardJump").SetValue(true));
             drawMenu.AddItem(new MenuItem("drawQ", "Draw Q").SetValue(true));
             drawMenu.AddItem(new MenuItem("drawW", "Draw W").SetValue(true));
@@ -267,18 +269,18 @@ namespace FuckingAwesomeLeeSin
             {
                 Vector3 insecPosition = InterceptionPoint(GetAllyInsec(GetAllyHeroes(target, 2000 + Menu.Item("bonusRangeA").GetValue<Slider>().Value)));
                 insecLinePos = Drawing.WorldToScreen(insecPosition);
-                return V2E(insecPosition, target.Position, target.Distance(insecPosition) + 200).To3D();
+                return V2E(insecPosition, target.Position, target.Distance(insecPosition) + 230).To3D();
 
             } 
             if(turrets.Any() && paramBool("insec2tower"))
             {
                 insecLinePos = Drawing.WorldToScreen(turrets[0].Position);
-                return V2E(turrets[0].Position, target.Position, target.Distance(turrets[0].Position) + 200).To3D();
+                return V2E(turrets[0].Position, target.Position, target.Distance(turrets[0].Position) + 230).To3D();
             }
             if (paramBool("insec2orig"))
             {
                 insecLinePos = Drawing.WorldToScreen(insecPos);
-                return V2E(insecPos, target.Position, target.Distance(insecPos) + 200).To3D();
+                return V2E(insecPos, target.Position, target.Distance(insecPos) + 230).To3D();
             }
             return new Vector3();
         }
@@ -503,7 +505,7 @@ namespace FuckingAwesomeLeeSin
                    ? TargetSelector.GetSelectedTarget()
                    : TargetSelector.GetTarget(Q.Range + 200, TargetSelector.DamageType.Physical);
             if (Menu.Item("instaFlashInsec").GetValue<KeyBind>().Active) Drawing.DrawText(960, 340, System.Drawing.Color.Red, "FLASH INSEC ENABLED");
-            if (newTarget != null && newTarget.IsVisible && Player.Distance(newTarget) < 3000)
+            if (newTarget != null && newTarget.IsVisible && Player.Distance(newTarget) < 3000 && paramBool("insecDraw"))
             {
                 Vector2 targetPos = Drawing.WorldToScreen(newTarget.Position);
                 Drawing.DrawLine(insecLinePos.X, insecLinePos.Y, targetPos.X, targetPos.Y, 3, System.Drawing.Color.White);
@@ -788,7 +790,7 @@ namespace FuckingAwesomeLeeSin
         public static void StarCombo()
         {
             var target = TargetSelector.GetTarget(1500, TargetSelector.DamageType.Physical);
-            if (target == null) return;
+            if (target == null || (paramBool("aaStacks") && Player.HasBuff("blindmonkpassive_cosmetic", true)) ) return;
             if (R.GetDamage(target) >= target.Health && paramBool("ksR")) R.Cast(target, packets());
             useItems(target);
             if ((target.HasBuff("BlindMonkQOne", true) || target.HasBuff("blindmonkqonechaos", true)) && paramBool("useQ2"))
