@@ -847,19 +847,19 @@ namespace FuckingAwesomeLeeSin
 
         public static string smitetype()
         {
-            if (SmiteBlue.Any(Items.HasItem))
+            if (SmiteBlue.Any(a => Items.HasItem(a)))
             {
                 return "s5_summonersmiteplayerganker";
             }
-            if (SmiteRed.Any(Items.HasItem))
+            if (SmiteRed.Any(a => Items.HasItem(a)))
             {
                 return "s5_summonersmiteduel";
             }
-            if (SmiteGrey.Any(Items.HasItem))
+            if (SmiteGrey.Any(a => Items.HasItem(a)))
             {
                 return "s5_summonersmitequick";
             }
-            if (SmitePurple.Any(Items.HasItem))
+            if (SmitePurple.Any(a => Items.HasItem(a)))
             {
                 return "itemsmiteaoe";
             }
