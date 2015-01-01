@@ -106,8 +106,8 @@ namespace FuckingAwesomeLeeSin
             var harassMenu = new Menu("Harass", "Harass");
             harassMenu.AddItem(new MenuItem("q1H", "Use Q1").SetValue(true));
             harassMenu.AddItem(new MenuItem("q2H", "Use Q2").SetValue(true));
-            harassMenu.AddItem(new MenuItem("wH", "Wardjump/Minion Jump away {Disabled}").SetValue(false));
-            harassMenu.AddItem(new MenuItem("eH", "Use E1").SetValue(true));
+            harassMenu.AddItem(new MenuItem("wH", "Wardjump/Minion Jump away").SetValue(true));
+            harassMenu.AddItem(new MenuItem("eH", "Use E1").SetValue(false));
             Menu.AddSubMenu(harassMenu);
 
             //Jung/Wave Clear
@@ -202,14 +202,24 @@ namespace FuckingAwesomeLeeSin
             var q = paramBool("q1H");
             var q2 = paramBool("q2H");
             var e = paramBool("eH");
+            var w = paramBool("wH");
 
-            if (q && Q.IsReady() && Q.Instance.Name == "BlindMonkQOne" && target.IsValidTarget(Q.Range)) CastQ1(target);
+            if (q && Q.IsReady() && Q.Instance.Name == "BlindMonkQOne" && target.IsValidTarget(Q.Range) && q) CastQ1(target);
             if (q2 && Q.IsReady() &&
-                (target.HasBuff("BlindMonkQOne", true) || target.HasBuff("blindmonkqonechaos", true)))
+               (target.HasBuff("BlindMonkQOne", true) || target.HasBuff("blindmonkqonechaos", true)) && q2)
             {
-                if(CastQAgain || !target.IsValidTarget(Orbwalking.GetRealAutoAttackRange(Player))) Q.Cast();
+                if (CastQAgain || !target.IsValidTarget(Orbwalking.GetRealAutoAttackRange(Player))) Q.Cast();
             }
-            if (e && E.IsReady() && target.IsValidTarget(E.Range) && E.Instance.Name == "BlindMonkEOne") E.Cast();
+            if (e && E.IsReady() && target.IsValidTarget(E.Range) && E.Instance.Name == "BlindMonkEOne" && e) E.Cast();
+            if (w && Player.Distance(target) < 50 && !(target.HasBuff("BlindMonkQOne", true) && !target.HasBuff("blindmonkqonechaos", true)) && (E.Instance.Name == "blindmonketwo" || !E.IsReady() && e) && (Q.Instance.Name == "blindmonkqtwo" || !Q.IsReady() && q))
+            {
+                var min =
+                    ObjectManager.Get<Obj_AI_Minion>()
+                        .Where(a => a.IsAlly && a.Distance(Player) <= W.Range)
+                        .OrderByDescending(a => a.Distance(target))
+                        .FirstOrDefault();
+                W.CastOnUnit(min);
+            }
 
         }
         #endregion
@@ -512,6 +522,10 @@ namespace FuckingAwesomeLeeSin
                 Utility.DrawCircle(getInsecPos(newTarget), 100, System.Drawing.Color.White);
             }
             if (!paramBool("DrawEnabled")) return;
+            foreach (var t in ObjectManager.Get<Obj_AI_Hero>())
+            {
+                if(t.HasBuff("BlindMonkQOne", true) || t.HasBuff("blindmonkqonechaos", true)) Drawing.DrawCircle(t.Position, 200, System.Drawing.Color.Red);
+            }
             if (Menu.Item("smiteEnabled").GetValue<KeyBind>().Active && paramBool("drawSmite"))
             {
                 Utility.DrawCircle(Player.Position, 700, System.Drawing.Color.White);
